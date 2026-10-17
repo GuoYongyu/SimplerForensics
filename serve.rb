@@ -136,7 +136,7 @@ end
 def run_jadx_analysis(request, response)
   origin = request['Origin']
   if origin && origin !~ %r{\Ahttp://(127\.0\.0\.1|localhost)(:\d+)?\z}i
-    return response_json(response, 403, error: '只允许本机 LittleTools 页面调用分析接口。')
+    return response_json(response, 403, error: '只允许本机 SimplerForensic 页面调用分析接口。')
   end
   unless request.request_method == 'POST'
     response['Allow'] = 'POST'
@@ -154,7 +154,7 @@ def run_jadx_analysis(request, response)
     return response_json(response, 503, error: '未找到 JADX 运行包。请运行 scripts/setup-jadx.sh（macOS/Linux）或 scripts/setup-jadx.ps1（Windows），无需安装 Java。')
   end
 
-  Dir.mktmpdir('littletools-jadx-') do |work_dir|
+  Dir.mktmpdir('simplerforensic-jadx-') do |work_dir|
     apk_path = File.join(work_dir, 'input.apk')
     output_dir = File.join(work_dir, 'decoded')
     File.binwrite(apk_path, request.body)
@@ -227,7 +227,7 @@ server.mount_proc('/api/apk/analyze') { |request, response| run_jadx_analysis(re
 
 port = server.listeners.first.addr[1]
 url = "http://127.0.0.1:#{port}/index.html"
-puts "LittleTools is running at #{url} (local machine only)."
+puts "SimplerForensic is running at #{url} (local machine only)."
 STDOUT.flush
 Thread.new { sleep 0.4; system('open', url) }
 Signal.trap('INT') { Thread.new { server.shutdown } }

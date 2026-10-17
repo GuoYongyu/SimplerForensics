@@ -57,7 +57,7 @@ _request_lock = Lock()
 
 def open_url(url, data=None, content_type=None, retries=3):
     global _last_request
-    headers = {"User-Agent": "LittleTools offline corpus downloader/1.0"}
+    headers = {"User-Agent": "SimplerForensic offline corpus downloader/1.0"}
     if content_type:
         headers["Content-Type"] = content_type
     for attempt in range(retries):

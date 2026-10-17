@@ -12,7 +12,7 @@
   const officialDatabase = 'https://sjfg.samr.gov.cn/law/pageInfo/main.main';
   let activeGroup = '题库';
   let visibleCount = 40;
-  const storageKey = 'littletools-market-search-imports-v1';
+  const storageKey = 'simplerforensic-market-search-imports-v1';
   const categoryAliases = {
     '价格与竞争':'价格竞争', '价格收费监督检查':'价格竞争', '反垄断执法':'价格竞争', '反不正当竞争监督管理':'价格竞争',
     '消费与交易':'消费', '广告与网络交易':'广告网络', '网络市场交易监督管理':'网络交易', '广告监督管理':'广告',
@@ -29,7 +29,12 @@
 
   function readImports() {
     try {
-      const value = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      let saved = localStorage.getItem(storageKey);
+      if (saved === null) {
+        saved = localStorage.getItem('littletools-market-search-imports-v1');
+        if (saved !== null) localStorage.setItem(storageKey, saved);
+      }
+      const value = JSON.parse(saved || '[]');
       return Array.isArray(value) ? value.filter((item) => item && typeof item.content === 'string') : [];
     } catch { return []; }
   }

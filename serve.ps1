@@ -21,7 +21,7 @@ if ($null -eq $listener) {
 }
 
 $url = "http://127.0.0.1:$port/index.html"
-Write-Host "LittleTools is running at $url (local machine only). Press Ctrl+C to stop."
+Write-Host "SimplerForensic is running at $url (local machine only). Press Ctrl+C to stop."
 Start-Process $url
 
 $mime = @{
@@ -50,7 +50,7 @@ function Send-Json($context, [int]$statusCode, $data) {
 function Invoke-JadxAnalysis($context) {
   $origin = $context.Request.Headers['Origin']
   if ($origin -and $origin -notmatch '^http://(127\.0\.0\.1|localhost)(:\d+)?$') {
-    Send-Json $context 403 @{ error = '只允许本机 LittleTools 页面调用分析接口。' }
+    Send-Json $context 403 @{ error = '只允许本机 SimplerForensic 页面调用分析接口。' }
     return
   }
   if ($context.Request.HttpMethod -ne 'POST') {

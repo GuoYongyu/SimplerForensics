@@ -1,6 +1,6 @@
-# LittleTools
+# SimplerForensic
 
-LittleTools 是一组可离线使用的本地工具，基于原生 HTML、CSS 和 JavaScript 编写，无需安装项目依赖。大多数工具直接在浏览器中运行；需要 APK 分析时，页面会调用本机的 JADX。
+SimplerForensic 是一组可离线使用的本地工具，基于原生 HTML、CSS 和 JavaScript 编写，无需安装项目依赖。大多数工具直接在浏览器中运行；需要 APK 分析时，页面会调用本机的 JADX。
 
 ## 工具一览
 
