@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>Windows 系统配置指南 · LittleTools</title>
+  <meta name="description" content="了解 Windows 系统目录、查看系统和硬件配置，并读懂注册表的结构、根键和值类型。">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261016-1"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>LittleTools<small>LOCAL TOOLKIT</small></span></a>
+    <span class="local-badge"><i></i> 仅在本地运行</span>
+  </header>
+  <main class="page-shell windows-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>Windows 系统配置指南</span></div>
+    <section class="windows-hero">
+      <div><p class="kicker">11 / WINDOWS FIELD GUIDE</p><h1>认识 Windows 的<br><span>目录、配置与注册表</span></h1><p>从哪里查看电脑信息？System32 和 SysWOW64 有什么不同？注册表里的键、值和数据又分别是什么？这份指南从常用入口开始，逐步解释这些系统信息。</p></div>
+      <div class="hero-stamp" aria-hidden="true"><span>WIN</span><b>01</b><i>系统地图</i></div>
+    </section>
+    <nav class="section-nav" aria-label="本页目录">
+      <a href="#quick-start">快速查看</a><a href="#usb">USB 设备记录</a><a href="#file-join-split">文件拼接拆分</a><a href="#directories">系统目录</a><a href="#registry">注册表结构</a><a href="#hives">常见根键</a><a href="#value-types">值类型</a><a href="#safe-reading">安全阅读</a>
+    </nav>
+
+    <section class="panel quick-panel" id="quick-start">
+      <div class="section-title"><div><p class="section-number">01 / QUICK LOOK</p><h2>按你要找的信息选择入口</h2></div><span class="section-mark">查看配置</span></div>
+      <div class="quick-grid">
+        <article class="quick-card"><span class="quick-icon">01</span><h3>Windows 版本与基础规格</h3><p>打开“设置 → 系统 → 关于”，查看版本、版本号、处理器、已安装 RAM、系统类型和设备名称。也可按 <kbd>Win</kbd> + <kbd>R</kbd> 输入 <code>winver</code> 查看版本对话框。</p><div class="quick-meta">适合：快速确认系统版本、位数和内存</div></article>
+        <article class="quick-card"><span class="quick-icon">02</span><h3>完整系统摘要</h3><p>按 <kbd>Win</kbd> + <kbd>R</kbd> 输入 <code>msinfo32</code> 打开“系统信息”。其中有系统摘要、硬件资源、组件和软件环境；可用“文件 → 导出”保存报告。</p><div class="quick-meta">适合：驱动、BIOS、设备和软件环境排查</div></article>
+        <article class="quick-card"><span class="quick-icon">03</span><h3>显卡、声音与 DirectX</h3><p>运行 <code>dxdiag</code> 打开 DirectX 诊断工具。查看“系统”“显示”“声音”选项卡；需要提交诊断信息时，可用“保存所有信息”生成文本文件。</p><div class="quick-meta">适合：游戏、图形和音频兼容性问题</div></article>
+        <article class="quick-card"><span class="quick-icon">04</span><h3>逐个查看硬件设备</h3><p>开始菜单搜索“设备管理器”，按类别展开处理器、显示适配器、磁盘驱动器、网络适配器等。黄色感叹号通常表示设备或驱动需要关注。</p><div class="quick-meta">适合：识别设备型号、检查驱动状态</div></article>
+        <article class="quick-card"><span class="quick-icon">05</span><h3>磁盘与卷</h3><p>开始菜单右键 →“磁盘管理”，查看实体磁盘、分区、盘符和文件系统。设置中的“系统 → 存储”更适合查看空间占用。</p><div class="quick-meta">适合：分清物理磁盘、分区和盘符</div></article>
+        <article class="quick-card"><span class="quick-icon">06</span><h3>打开注册表查看器</h3><p>按 <kbd>Win</kbd> + <kbd>R</kbd> 输入 <code>regedit</code>。左侧是键的层级树，右侧显示所选键下的值名称、类型和数据；先浏览，不要随意编辑或删除。</p><div class="quick-meta">适合：定位程序或 Windows 配置项</div></article>
+      </div>
+      <div class="command-note"><strong>命令行只读摘要</strong><span>在 PowerShell 中运行以下命令可查看常见硬件信息；它们只查询并输出结果。</span></div>
+      <div class="copy-lines">
+        <div class="copy-line"><code>Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber, OsArchitecture, CsSystemType</code><button class="copy-btn" type="button" data-copy="Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber, OsArchitecture, CsSystemType">复制</button></div>
+        <div class="copy-line"><code>Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors</code><button class="copy-btn" type="button" data-copy="Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors">复制</button></div>
+        <div class="copy-line"><code>Get-CimInstance Win32_PhysicalMemory | Select-Object Manufacturer, Capacity, Speed</code><button class="copy-btn" type="button" data-copy="Get-CimInstance Win32_PhysicalMemory | Select-Object Manufacturer, Capacity, Speed">复制</button></div>
+      </div>
+      <p class="privacy-note">提示：系统报告可能包含设备名、用户名、驱动、网络或硬件标识。分享之前先检查并移除不想公开的信息。</p>
+    </section>
+
+    <section class="panel usb-panel" id="usb">
+      <div class="section-title"><div><p class="section-number">02 / USB DEVICE TRACE</p><h2>USB 设备信息与连接痕迹怎么查</h2></div><span class="section-mark">实用排查</span></div>
+      <p class="intro-copy">先区分你要回答的问题：查“现在插着什么”应看当前设备；查“这台电脑曾安装/识别过什么”可看非当前设备、设备安装日志和注册表痕迹；查“准确的插拔时间线”则需要当时已记录相应事件。Windows 没有一个永久、完整、绝对可靠的 USB 插拔历史清单。</p>
+      <div class="usb-workflows">
+        <article class="usb-workflow current"><div class="workflow-heading"><span>01</span><div><h3>查看当前连接的 USB 设备</h3><small>设备仍连接在电脑上时</small></div></div><ol><li>右键开始菜单 →“设备管理器”。展开“磁盘驱动器”“通用串行总线控制器”“便携设备”等类别。</li><li>双击目标设备，在“常规”查看状态；“详细信息”里可选择“硬件 ID”“设备实例路径”“父级”等属性。</li><li>USB 存储盘也可以打开“磁盘管理”查看磁盘和分区；谨慎区分实体磁盘、卷和盘符。</li></ol><div class="usb-command"><div class="usb-command-label">PowerShell：列出当前已枚举的 USB 设备</div><div class="copy-line"><code>Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -like 'USB\*' -or $_.InstanceId -like 'USBSTOR\*' } | Select-Object Status, Class, FriendlyName, InstanceId</code><button class="copy-btn" type="button" data-copy="Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -like 'USB\*' -or $_.InstanceId -like 'USBSTOR\*' } | Select-Object Status, Class, FriendlyName, InstanceId">复制</button></div><div class="copy-line"><code>Get-Disk | Where-Object BusType -eq 'USB' | Select-Object Number, FriendlyName, SerialNumber, BusType, Size, OperationalStatus</code><button class="copy-btn" type="button" data-copy="Get-Disk | Where-Object BusType -eq 'USB' | Select-Object Number, FriendlyName, SerialNumber, BusType, Size, OperationalStatus">复制</button></div><p>第一条针对即插即用设备实例；第二条针对 Windows 识别为 USB 总线的磁盘。个别 USB 转接盒、手机或复合设备会以其他类别/总线呈现，所以结果不一定都出现在同一条命令里。</p></div></article>
+
+        <article class="usb-workflow past"><div class="workflow-heading"><span>02</span><div><h3>查看曾经识别过的设备</h3><small>设备已经拔掉时</small></div></div><ol><li>设备管理器菜单“查看 → 显示隐藏的设备”，再查看“磁盘驱动器”“便携设备”和 USB 控制器。灰色设备通常表示当前未连接的设备节点，不代表有完整的连接时间记录。</li><li>PowerShell 不加 <code>-PresentOnly</code> 可列出系统已登记的 PnP 设备，再按 USB 存储实例路径筛选：</li></ol><div class="copy-line"><code>Get-PnpDevice | Where-Object { $_.InstanceId -like 'USBSTOR\*' } | Select-Object Status, Class, FriendlyName, InstanceId</code><button class="copy-btn" type="button" data-copy="Get-PnpDevice | Where-Object { $_.InstanceId -like 'USBSTOR\*' } | Select-Object Status, Class, FriendlyName, InstanceId">复制</button></div><div class="usb-subheading">注册表里的常见位置</div><div class="usb-registry-list"><div><code>HKLM\SYSTEM\CurrentControlSet\Enum\USB</code><p>USB 设备及其枚举出来的接口/实例信息；常能看到 VID、PID、硬件 ID、设备描述等。设备管理器“详细信息”比注册表更易读。</p></div><div><code>HKLM\SYSTEM\CurrentControlSet\Enum\USBSTOR</code><p>传统 USB 大容量存储设备常见的枚举位置；路径中有时能辨认厂商、产品和实例标识。条目下可能有 DeviceDesc、Mfg、FriendlyName、HardwareID 等值，具体名称因设备而异。</p></div><div><code>HKLM\SYSTEM\MountedDevices</code><p>Windows 管理的卷标识与盘符映射信息；不是按时间排列的插拔清单。</p></div><div><code>HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\MountPoints2</code><p>当前用户相关的可移动卷挂载痕迹之一；不能单独证明具体某人在某个时间实际打开或复制过文件。</p></div></div><p>打开注册表编辑器（<code>regedit</code>），逐层进入路径。也可以在命令提示符查询，例如 <code>reg query "HKLM\SYSTEM\CurrentControlSet\Enum\USBSTOR" /s</code>。系统可能限制某些位置的读取；查询结果也可能包含设备序列号等隐私信息。查看属性时同时记下完整实例路径；若要从 VID/PID 判断厂商和型号，可将两个 ID 一起搜索核对，单看设备描述可能是通用名称。</p></article>
+
+        <article class="usb-workflow timeline"><div class="workflow-heading"><span>03</span><div><h3>查安装记录和事件时间</h3><small>想定位驱动安装或事件发生时间</small></div></div><div class="timeline-step"><b>A · SetupAPI 设备安装日志</b><p>文件资源管理器地址栏输入 <code>%windir%\inf\setupapi.dev.log</code>。用记事本打开，搜索设备实例 ID 或 <code>VID_厂商ID&amp;PID_产品ID</code>。它记录设备安装/配置过程，可用于核对驱动安装问题；它不是每一次插入和拔出的全量日志，旧内容也可能不再保留。</p><div class="copy-line"><code>Select-String -Path "$env:windir\inf\setupapi.dev.log" -Pattern 'VID_1234&amp;PID_5678' -Context 3,8</code><button class="copy-btn" type="button" data-copy="Select-String -Path &quot;$env:windir\inf\setupapi.dev.log&quot; -Pattern 'VID_1234&amp;PID_5678' -Context 3,8">复制</button></div><small>示例里的 VID/PID 要替换成目标设备的实际 ID。</small></div><div class="timeline-step"><b>B · 事件查看器</b><p>运行 <code>eventvwr.msc</code>，查看“应用程序和服务日志 → Microsoft → Windows”下的 <code>DriverFrameworks-UserMode/Operational</code>、<code>DeviceSetupManager/Admin</code> 等频道（本机名称和可用频道可能不同）。前者只涉及使用 UMDF 的设备驱动框架事件；后者常见设备设置/元数据事件。它们都不是所有 USB 插拔的统一审计频道。在频道属性中检查是否启用、日志大小/覆盖策略及最早保留时间，再按设备名、实例 ID 或时间筛选。</p><p>先列出本机名称含 USB 的事件日志及启用状态：</p><div class="copy-line"><code>Get-WinEvent -ListLog '*USB*' | Select-Object LogName, IsEnabled, RecordCount</code><button class="copy-btn" type="button" data-copy="Get-WinEvent -ListLog '*USB*' | Select-Object LogName, IsEnabled, RecordCount">复制</button></div><p>若确认 UMDF Operational 存在且有记录，可查询最近 7 天包含 USB 或 VID 字样的事件：</p><div class="copy-line"><code>Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-DriverFrameworks-UserMode/Operational'; StartTime=(Get-Date).AddDays(-7)} -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'USB|VID_' } | Select-Object TimeCreated, Id, Message -First 30</code><button class="copy-btn" type="button" data-copy="Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-DriverFrameworks-UserMode/Operational'; StartTime=(Get-Date).AddDays(-7)} -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'USB|VID_' } | Select-Object TimeCreated, Id, Message -First 30">复制</button></div><p>查不到记录不代表设备没插过：频道可能不存在、未启用或日志已覆盖。</p></div><div class="callout amber-callout"><b>时间线的边界</b><p>事件频道可能不存在、未启用、被覆盖，或只记录安装/驱动事件。注册表项的“最后写入时间”也不是可靠的插拔时间。若相关日志当时没有记录，通常无法事后恢复精确的每次插拔时间。</p></div></article>
+      </div>
+      <div class="usb-id-guide"><div><b>读懂 USB 实例 ID</b><code>USB\VID_046D&amp;PID_C534\5&amp;2A…</code><p><strong>VID</strong> 是厂商标识，<strong>PID</strong> 是产品标识；后续部分是实例标识，可能来自设备序列号，也可能由端口/系统生成。一个实体 USB 设备可能展开成多个设备节点，名称或节点数量不一定一一对应。</p></div><div><b>想看更完整的设备属性</b><code>pnputil /enum-devices /connected</code><p>Windows 10 版本 1903 及更高版本支持该枚举参数；较新的 Windows 版本还提供更多属性筛选参数。它列出当前设备，不会自动变成历史审计报告。</p></div></div>
+    </section>
+
+    <section class="panel file-ops-panel" id="file-join-split">
+      <div class="section-title"><div><p class="section-number">03 / FILE OPERATIONS</p><h2>文件拼接与拆分</h2></div><span class="section-mark">命令速查</span></div>
+      <p class="intro-copy">先判断文件类型。可执行文件、压缩包、图片、视频等二进制文件要按字节拼接和拆分；文本文件可以按文本行处理，但编码、换行和文件末尾换行可能被规范化。</p>
+      <div class="file-op-grid">
+        <article class="file-op-card"><div class="file-op-heading"><span>JOIN</span><h3>拼接二进制分卷</h3></div><p>在命令提示符（CMD）中，按原始顺序列出每个分卷。<code>/b</code> 表示二进制模式，避免按文本方式处理文件。</p><div class="copy-line"><code>copy /b "archive.part001"+"archive.part002"+"archive.part003" "archive.zip"</code><button class="copy-btn" type="button" data-copy="copy /b &quot;archive.part001&quot;+&quot;archive.part002&quot;+&quot;archive.part003&quot; &quot;archive.zip&quot;">复制</button></div><p class="file-op-tip">分卷名称要按编号顺序填写，不能漏段。CMD 显示“已复制”不代表内容一定完整；拼好后再用对应程序打开，或比对来源提供的 SHA-256。</p></article>
+        <article class="file-op-card"><div class="file-op-heading"><span>TEXT</span><h3>拼接文本文件</h3></div><p>如果只是把多份文本内容按顺序合并，可在 PowerShell 使用：</p><div class="copy-line"><code>Get-Content .\a.txt, .\b.txt | Set-Content .\merged.txt -Encoding utf8</code><button class="copy-btn" type="button" data-copy="Get-Content .\a.txt, .\b.txt | Set-Content .\merged.txt -Encoding utf8">复制</button></div><p class="file-op-tip">这会按文本读取并重新写出内容，可能改变编码、换行符或末尾换行。要逐字节保持原样，请对文本也使用二进制拼接：<code>copy /b "a.txt"+"b.txt" "merged.txt"</code>。</p></article>
+        <article class="file-op-card wide-file-op"><div class="file-op-heading"><span>SPLIT</span><h3>按大小拆分任意文件</h3></div><p>CMD 没有通用的内置二进制分块命令。下面的 PowerShell 脚本以 100 MiB 为一段读取和写出，不会把整个大文件一次性载入内存。先把 <code>$sourcePath</code> 改成待拆文件路径；生成文件形如 <code>large.iso.part001</code>、<code>large.iso.part002</code>。</p><div class="code-block-wrap"><button class="copy-btn code-copy" type="button" data-copy-selector="#split-file-script">复制脚本</button><pre id="split-file-script"><code>$sourcePath = '.\large.iso'
+$chunkBytes = 100MB
+$buffer = New-Object byte[] (1MB)
+$source = [IO.File]::OpenRead($sourcePath)
+try {
+    $partNumber = 1
+    $remaining = $chunkBytes
+    $writer = $null
+    try {
+        while ($true) {
+            if ($remaining -eq 0) {
+                $writer.Dispose()
+                $writer = $null
+                $partNumber++
+                $remaining = $chunkBytes
+            }
+            $toRead = [int][Math]::Min($buffer.Length, $remaining)
+            $read = $source.Read($buffer, 0, $toRead)
+            if ($read -eq 0) { break }
+            if ($null -eq $writer) {
+                $partPath = '{0}.part{1:D3}' -f $sourcePath, $partNumber
+                $writer = [IO.File]::Create($partPath)
+            }
+            $writer.Write($buffer, 0, $read)
+            $remaining -= $read
+        }
+    } finally {
+        if ($null -ne $writer) { $writer.Dispose() }
+    }
+} finally {
+    $source.Dispose()
+}</code></pre></div><p class="file-op-tip">这个拆分脚本会覆盖同名输出分卷。确认目录里没有要保留的同名文件；若之前拆分过更大的版本，重拆前还要检查旧的高编号分卷，避免重组时混入过期分卷。源文件本身不会被修改。可把 <code>100MB</code> 改成需要的分块大小。此方法按字节切块，文本内容可能在行中间或多字节字符中间断开。</p></article>
+        <article class="file-op-card wide-file-op"><div class="file-op-heading"><span>REJOIN</span><h3>按顺序重新拼回二进制文件</h3></div><p>用 PowerShell 读取编号分卷并按文件名顺序逐段写出，适用于上面脚本生成的分卷：</p><div class="code-block-wrap"><button class="copy-btn code-copy" type="button" data-copy-selector="#join-file-script">复制脚本</button><pre id="join-file-script"><code>$parts = Get-ChildItem -File '.\large.iso.part*' | Sort-Object Name
+$destination = [IO.File]::Create('.\large-restored.iso')
+try {
+    foreach ($part in $parts) {
+        $source = [IO.File]::OpenRead($part.FullName)
+        try { $source.CopyTo($destination) }
+        finally { $source.Dispose() }
+    }
+} finally {
+    $destination.Dispose()
+}</code></pre></div><p class="file-op-tip">把文件名模式改成你的分卷前缀，输出文件要使用不同名称并放在不会匹配到分卷的路径。要确认拼接无误，可比较原文件和还原文件的 SHA-256 哈希值。</p></article>
+      </div>
+      <div class="callout blue-callout"><b>完整性核对</b><p>拆分、传输、重组后，若有原文件可用，对比原文件和还原文件的 SHA-256：<code>Get-FileHash .\large.iso, .\large-restored.iso -Algorithm SHA256</code>。两行哈希值相同，才说明两份文件内容一致。没有原文件哈希时，“命令成功”本身不能证明分卷齐全或顺序正确。</p></div>
+    </section>
+
+    <section class="panel" id="directories">
+      <div class="section-title"><div><p class="section-number">04 / FILESYSTEM</p><h2>常见 Windows 系统目录</h2></div><span class="section-mark">路径地图</span></div>
+      <p class="intro-copy">Windows 安装位置不一定是 <code>C:\Windows</code>。先在文件资源管理器地址栏输入环境变量（如 <code>%windir%</code>）可以跳转到当前设备对应的位置。目录中的内容由系统、服务或安装程序管理。</p>
+      <div class="directory-table-wrap"><table class="directory-table"><thead><tr><th>路径 / 变量</th><th>主要用途</th><th>阅读时的注意点</th></tr></thead><tbody>
+        <tr><td><code>%windir%</code><small>常见为 C:\Windows</small></td><td>Windows 安装目录。包含系统组件、字体、日志、配置和其他系统资源。</td><td>不要通过手动删除文件来“清理”此目录。</td></tr>
+        <tr><td><code>%windir%\System32</code></td><td>系统工具、服务程序和系统组件所在目录。</td><td>在 64 位 Windows 上，这里通常放 64 位系统文件；目录名沿用历史命名。</td></tr>
+        <tr><td><code>%windir%\SysWOW64</code></td><td>64 位 Windows 用于兼容运行 32 位程序的系统组件目录。</td><td>名字容易误读：这里通常是 32 位组件，不是“另一套 64 位系统”。</td></tr>
+        <tr><td><code>%windir%\WinSxS</code></td><td>Windows 组件存储，供系统维护、启用可选功能及更新等操作使用。</td><td>资源管理器显示的大小可能包含硬链接重复计算；不要手动删除或搬动。</td></tr>
+        <tr><td><code>%windir%\System32\DriverStore\FileRepository</code></td><td>驱动程序包的存储位置，供 Windows 安装或维护设备驱动。</td><td>卸载驱动或清理驱动包应使用系统工具，避免直接删目录。</td></tr>
+        <tr><td><code>%ProgramData%</code><small>常见为 C:\ProgramData</small></td><td>供这台电脑上的所有用户共享的应用数据。</td><td>通常隐藏；具体内容由对应软件管理。</td></tr>
+        <tr><td><code>%AppData%</code> / <code>%LocalAppData%</code></td><td>当前用户的应用数据：漫游配置通常在 Roaming，本机缓存等常在 Local。</td><td>每个用户各有一份；删除数据可能重置应用设置或丢失本地数据。</td></tr>
+        <tr><td><code>%windir%\System32\config</code></td><td>多个系统注册表配置单元的支持文件所在位置。</td><td>这是注册表底层数据文件，不是用来直接编辑的文本配置目录。</td></tr>
+        <tr><td><code>System Volume Information</code></td><td>卷级系统数据，可能与系统还原、索引或卷管理功能有关。</td><td>受系统保护；不要强行更改权限或删除里面的内容。</td></tr>
+      </tbody></table></div>
+      <div class="callout blue-callout"><b>为什么 32 位程序看到的路径会不同？</b><p>在 64 位 Windows 上，WOW64 会为部分 32 位程序提供文件系统重定向和注册表视图。例如，32 位程序访问 <code>System32</code> 时可能被重定向到 <code>SysWOW64</code>。因此，排查路径时要同时确认程序本身是 32 位还是 64 位。</p></div>
+    </section>
+
+    <section class="panel registry-panel" id="registry">
+      <div class="section-title"><div><p class="section-number">05 / REGISTRY TREE</p><h2>注册表是一棵配置树</h2></div><span class="section-mark">结构拆解</span></div>
+      <p class="intro-copy">注册表是 Windows 和应用程序读取配置数据的分层数据库。它不等同于一个可随意浏览的普通文本文件夹：每个节点可以包含更多子键，也可以在该节点下保存一个或多个值。</p>
+      <div class="registry-diagram" aria-label="注册表路径结构示意">
+        <div class="tree-root"><span class="tree-icon">H</span><div><small>根键 / HIVE</small><strong>HKEY_CURRENT_USER</strong></div><span class="tree-desc">当前用户</span></div>
+        <div class="tree-branch"><i></i><div class="tree-key"><span class="tree-icon small-icon">▰</span><div><small>子键 / KEY</small><strong>Software\Contoso\Notes</strong></div><span class="tree-desc">路径层级</span></div>
+          <div class="tree-branch inner-branch"><i></i><div class="tree-value"><span class="value-icon">◉</span><div><small>值名称 / VALUE NAME</small><strong>Theme</strong></div><span class="value-type">REG_SZ</span><code>"Dark"</code></div>
+            <div class="tree-value"><span class="value-icon">◉</span><div><small>值名称 / VALUE NAME</small><strong>AutoSaveMinutes</strong></div><span class="value-type">REG_DWORD</span><code>10</code></div>
+          </div>
+        </div>
+      </div>
+      <div class="concept-grid">
+        <article><b>根键</b><p>预定义的入口，例如 <code>HKEY_CURRENT_USER</code>。路径从某个根键开始。</p></article>
+        <article><b>键 / 子键</b><p>树中的节点，可包含其他子键和值。路径用反斜杠分隔，例如 <code>Software\Contoso</code>。</p></article>
+        <article><b>值名称</b><p>键下面的一项数据的名字，例如 <code>Theme</code>。键本身也可以没有值。</p></article>
+        <article><b>类型与数据</b><p>类型说明数据如何解释；数据才是实际内容，例如文本 <code>Dark</code> 或整数 <code>10</code>。</p></article>
+      </div>
+      <div class="path-example"><span>完整路径示例</span><code>HKEY_CURRENT_USER\Software\Contoso\Notes → Theme = "Dark"</code><p>读作：当前用户根键下，打开 Software → Contoso → Notes，查看名为 Theme 的字符串值。</p></div>
+    </section>
+
+    <section class="panel" id="hives">
+      <div class="section-title"><div><p class="section-number">06 / ROOT KEYS</p><h2>常见根键各自代表什么</h2></div><span class="section-mark">快速索引</span></div>
+      <div class="hive-list">
+        <article class="hive-row"><div class="hive-short">HKCR</div><div><h3>HKEY_CLASSES_ROOT</h3><p>文件类型关联、COM 类等信息的合并视图。它与当前用户和计算机范围内的 Classes 配置有关。</p></div><span class="hive-scope">文件关联 / 组件类</span></article>
+        <article class="hive-row"><div class="hive-short">HKCU</div><div><h3>HKEY_CURRENT_USER</h3><p>当前登录用户的配置视图。常见应用设置位于 <code>HKCU\Software</code>，不同账户看到的内容可以不同。</p></div><span class="hive-scope">当前用户</span></article>
+        <article class="hive-row"><div class="hive-short">HKLM</div><div><h3>HKEY_LOCAL_MACHINE</h3><p>本机范围的系统、硬件、驱动、服务与软件配置。常见分支包括 <code>HARDWARE</code>、<code>SOFTWARE</code>、<code>SYSTEM</code>。</p></div><span class="hive-scope">整台电脑</span></article>
+        <article class="hive-row"><div class="hive-short">HKU</div><div><h3>HKEY_USERS</h3><p>已加载用户配置文件的根键。用户 SID 子键对应各用户配置；<code>.DEFAULT</code> 是系统使用的配置之一，不等于“新用户默认模板”的全部含义。</p></div><span class="hive-scope">已加载用户配置</span></article>
+        <article class="hive-row"><div class="hive-short">HKCC</div><div><h3>HKEY_CURRENT_CONFIG</h3><p>当前硬件配置的视图，通常反映当前硬件配置文件相关的信息。</p></div><span class="hive-scope">当前硬件配置</span></article>
+      </div>
+      <div class="callout amber-callout"><b>提示：根键有些是系统提供的视图或别名</b><p>例如 <code>HKCU</code> 与 <code>HKCC</code> 便于程序访问特定配置；并非每个根键都对应一个可以直接在磁盘上找到的同名文件。注册表配置单元（hive）会由系统从支持文件加载并管理。</p></div>
+    </section>
+
+    <section class="panel" id="value-types">
+      <div class="section-title"><div><p class="section-number">07 / VALUE TYPES</p><h2>常见注册表值类型</h2></div><span class="section-mark">数据怎么读</span></div>
+      <div class="directory-table-wrap"><table class="type-table"><thead><tr><th>类型</th><th>代表什么</th><th>常见显示形式</th><th>阅读提示</th></tr></thead><tbody>
+        <tr><td><code>REG_SZ</code></td><td>固定字符串</td><td><code>C:\Tools\app.exe</code></td><td>普通文本；字符串内容本身不自动展开环境变量。</td></tr>
+        <tr><td><code>REG_EXPAND_SZ</code></td><td>可扩展字符串</td><td><code>%SystemRoot%\System32</code></td><td>使用它的程序可以按环境变量解析占位符。</td></tr>
+        <tr><td><code>REG_DWORD</code></td><td>32 位整数</td><td><code>0</code> / <code>1</code>，或十六进制数</td><td>有些设置用 0/1 表示关/开，但含义由具体软件或键决定，不能只看数字猜。</td></tr>
+        <tr><td><code>REG_QWORD</code></td><td>64 位整数</td><td>十进制或十六进制数</td><td>用于更宽的整数值。</td></tr>
+        <tr><td><code>REG_BINARY</code></td><td>二进制数据</td><td><code>01 00 FF …</code></td><td>十六进制只是展示方式，通常要知道具体格式才能解释。</td></tr>
+        <tr><td><code>REG_MULTI_SZ</code></td><td>字符串列表</td><td>多行文本</td><td>表示多项文本，而不是一段普通长字符串。</td></tr>
+      </tbody></table></div>
+      <p class="type-footnote">同一个类型在不同路径下可能有完全不同的业务含义。解释某个注册表项时，应同时看路径、值名、类型、数据和适用的 Windows / 软件版本。</p>
+    </section>
+
+    <section class="panel" id="safe-reading">
+      <div class="section-title"><div><p class="section-number">08 / READ SAFELY</p><h2>读注册表时的几个原则</h2></div><span class="section-mark">安全边界</span></div>
+      <div class="safe-grid">
+        <div class="safe-item"><span>01</span><div><b>优先使用设置页和官方工具</b><p>如果只是查看 Windows 版本或硬件，先用“设置 → 系统 → 关于”、系统信息或设备管理器。</p></div></div>
+        <div class="safe-item"><span>02</span><div><b>记录完整路径和数据类型</b><p>只截取一个数值很容易失去上下文；同时记录根键、子键路径、值名称、类型和数据。</p></div></div>
+        <div class="safe-item"><span>03</span><div><b>编辑前导出备份</b><p>注册表编辑器可对选中的键执行“导出”。确认备份和恢复方式后，再按可信的具体说明修改。</p></div></div>
+        <div class="safe-item"><span>04</span><div><b>不要把注册表清理当作提速手段</b><p>不要批量删除“不认识”的键。错误的改动可能导致应用、驱动或 Windows 功能异常。</p></div></div>
+      </div>
+      <div class="source-note"><h3>进一步阅读 · Microsoft 官方资料</h3><div class="source-links">
+        <a href="https://support.microsoft.com/zh-CN/Windows/Experience/find-information-about-your-windows-device" target="_blank" rel="noopener noreferrer">查找有关 Windows 设备的信息 ↗</a>
+        <a href="https://support.microsoft.com/en-gb/windows/experience/description-of-microsoft-system-information-msinfo32-exe-tool" target="_blank" rel="noopener noreferrer">系统信息工具 MSINFO32 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/windows/win32/sysinfo/structure-of-the-registry" target="_blank" rel="noopener noreferrer">注册表的结构 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/windows/win32/sysinfo/predefined-keys" target="_blank" rel="noopener noreferrer">预定义根键说明 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/windows/win32/sysinfo/registry-hives" target="_blank" rel="noopener noreferrer">注册表配置单元 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/troubleshoot/windows-server/performance/windows-registry-advanced-users" target="_blank" rel="noopener noreferrer">注册表值类型 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/windows/win32/shell/knownfolderid" target="_blank" rel="noopener noreferrer">Windows 常见文件夹 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/powershell/module/pnpdevice/get-pnpdevice?view=windowsserver2025-ps" target="_blank" rel="noopener noreferrer">Get-PnpDevice 命令 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/install/setupapi-device-installation-log-entries" target="_blank" rel="noopener noreferrer">SetupAPI 设备安装日志 ↗</a>
+        <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/devtest/pnputil-command-syntax" target="_blank" rel="noopener noreferrer">PnPUtil 命令参考 ↗</a>
+      </div><p>Windows 不同版本、设备厂商和应用程序可能使用不同路径或配置项。文中路径是常见示例，实际位置可通过环境变量或对应应用的文档确认。</p></div>
+    </section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+</body>
+</html>

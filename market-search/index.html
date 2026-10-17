@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>市场监管题库与法规检索 · LittleTools</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js"></script>
+  <script defer src="data/questions.js"></script>
+  <script defer src="data/laws.js"></script>
+  <script defer src="data/laws-full.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>LittleTools<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
+  <main class="page-shell market-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>市场监管题库与法规检索</span></div>
+    <section class="page-heading"><div><p class="kicker">10 / MARKET LAW & QUESTION BANK</p><h1>市场监管题库与法规检索</h1><p>在本地检索题库和法规资料，搜索索引完全离线运行。</p></div><span class="chip" id="total-count">建立索引中…</span></section>
+    <section class="panel search-panel" aria-label="搜索题库与法规">
+      <label class="field-label" for="query">输入题目、关键词、法条主题或法规名称</label>
+      <div class="search-row"><input class="field" id="query" type="search" autocomplete="off" placeholder="例如：食品抽样、价格欺诈、特种设备报废"><button class="btn" id="clear-query" type="button">清空</button></div>
+      <p class="hint">支持题干、选项、答案和法规主题的模糊搜索；可在“题库”和“法律法规”之间切换。</p>
+      <div class="category-filter" id="filters" aria-label="题库和法律法规"></div>
+    </section>
+    <div class="results-toolbar"><p id="result-summary" aria-live="polite"></p><button class="btn" id="import-toggle" type="button">导入本地资料</button></div>
+    <section class="panel import-panel" id="import-panel" hidden>
+      <h2>扩充本机索引</h2>
+      <p>选择 TXT / Markdown / CSV / JSON 文件，内容保存在当前浏览器。本地 JSON 题目格式为数组，每项可含 question、options、answer；法规或资料项可含 title、content、category、source、url。也可直接导入纯文本。</p>
+      <div class="import-row"><input id="import-files" class="file-input" type="file" accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" multiple><button class="btn" id="export-imports" type="button">导出已导入资料</button><button class="btn btn-danger" id="clear-imports" type="button">清除已导入资料</button></div>
+      <p id="import-status" class="status" hidden></p>
+    </section>
+    <section id="results" class="market-results" aria-live="polite"></section>
+    <section class="panel source-note"><h2>本地法规库与资料更新</h2><p>法规快照于 2026-10-16 获取：594 条总局数据库记录，另补充 1 条由后续国家知识产权局规章取代的现行专利申请规定，共保存 595 份 PDF 原文及其全文索引。页面搜索和打开本地 PDF 不需要联网；卡片的“官方来源”链接需要网络。效力状态按官方数据库标注；发现数据库中一条旧规定状态与后续废止文本不一致，已在卡片中标出后续依据。重要使用场景请核对正式文本和适用版本。</p><p>PDF 文件位于 <code>data/laws/</code>，法规全文索引为 <code>data/laws-full.json</code> 和页面加载用的 <code>data/laws-full.js</code>。更新官方库可联网运行 <code>python3 market-search/download-corpus.py</code>，单独重建前端索引可运行 <code>python3 market-search/build-law-index.py</code>。题目仍可编辑 <code>data/questions.json</code> 并运行对应的索引生成脚本。</p><div class="source-links"><a href="https://sjfg.samr.gov.cn/law/pageInfo/main.main" target="_blank" rel="noopener noreferrer">国家市场监督管理总局市场监管法律法规规章数据库 ↗</a></div></section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+</body>
+</html>

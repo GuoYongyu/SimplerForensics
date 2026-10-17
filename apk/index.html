@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>APK 元数据解析 · LittleTools</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261015-4"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>LittleTools<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>APK 元数据解析</span></div>
+    <section class="page-heading"><div><p class="kicker">06 / ANDROID PACKAGE</p><h1>APK 元数据解析</h1><p>使用本机便携版 JADX 分析 APK 结构、权限和代码特征。</p></div><span class="chip">本机分析 · 不上传</span></section>
+    <section class="panel">
+      <label class="field-label" for="apk-file">选择 APK 文件</label>
+      <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="选择或拖放 APK 文件"><strong>拖放 APK 到这里</strong><span>或点击选择文件（最大 1 GB）</span><input id="apk-file" class="file-input" type="file" accept=".apk,application/vnd.android.package-archive,application/zip"></div>
+      <div id="status" class="status" hidden></div>
+    </section>
+    <section id="results" hidden>
+      <section class="panel"><h2>应用信息</h2><div id="app-info" class="apk-info-grid"></div><p class="hint apk-sdk-note">最低兼容版本决定应用可安装的最低 Android API 级别；目标 Android 版本表示应用声明适配的 API 级别，不代表最高兼容版本。</p></section>
+      <section class="panel"><div class="apk-permission-heading"><h2>声明的权限</h2><span id="permission-count" class="chip"></span></div><div id="permissions" class="apk-permissions"></div></section>
+      <section class="panel"><div class="apk-permission-heading"><div><h2>JADX 代码分析</h2><p class="hint">识别代码中常见的网络、设备能力、动态加载、加密等 API，并列出静态网址与来源位置。特征仅表示代码引用线索，不等同于运行时行为。</p></div><span class="chip">本机 JADX CLI</span></div><div id="jadx-status" class="status" role="status" aria-live="polite">等待分析</div><div id="code-findings" class="code-findings" hidden></div><div id="jadx-url-results" hidden><h3>静态网址</h3><p id="jadx-url-count" class="hint"></p><div class="table-wrap"><table class="jadx-url-table"><thead><tr><th>静态网址</th><th>来源</th></tr></thead><tbody id="jadx-urls"></tbody></table></div></div></section>
+    </section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+</body>
+</html>

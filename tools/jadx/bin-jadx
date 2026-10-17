@@ -1,0 +1,14 @@
+#!/bin/sh
+TOOLS_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
+case "$OS:$ARCH" in
+  darwin:arm64|darwin:aarch64) RUNTIME="mac-arm64" ;;
+  darwin:x86_64|darwin:amd64) RUNTIME="mac-x64" ;;
+  linux:arm64|linux:aarch64) RUNTIME="linux-arm64" ;;
+  linux:x86_64|linux:amd64) RUNTIME="linux-x64" ;;
+  *) echo "当前平台没有预装 JADX 运行时：$OS/$ARCH" >&2; exit 1 ;;
+esac
+export JAVA_HOME="$TOOLS_DIR/runtime/$RUNTIME"
+export PATH="$JAVA_HOME/bin:$PATH"
+exec "$TOOLS_DIR/app/bin/jadx" "$@"
