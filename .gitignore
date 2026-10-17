@@ -1,7 +1,16 @@
+# Downloaded JADX portable runtime
 /jadx-portable-bundle.zip
+/tools/jadx/
 
+# Downloaded source data
 /market-search/data/laws/*
 /market-search/data/*.xlsx
 /market-search/data/*.xls
 
+# Local MD5 wordlists
 /md5/dicts/*.txt
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
