@@ -1,5 +1,7 @@
 /jadx-portable-bundle.zip
 
 /market-search/data/laws/*
+/market-search/data/*.xlsx
+/market-search/data/*.xls
 
 /md5/dicts/*.txt
