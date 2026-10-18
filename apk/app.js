@@ -6,11 +6,36 @@ const appInfo = document.querySelector('#app-info');
 const permissions = document.querySelector('#permissions');
 const permissionCount = document.querySelector('#permission-count');
 const jadxStatus = document.querySelector('#jadx-status');
+const jadxVersion = document.querySelector('#jadx-version');
 const codeFindings = document.querySelector('#code-findings');
+const codeFindingsSection = document.querySelector('#code-findings-section');
+const codeFindingItems = document.querySelector('#code-finding-items');
+const codeFindingsToggle = document.querySelector('#code-findings-toggle');
+const permissionToggle = document.querySelector('#permission-toggle');
+const codeFindingCount = document.querySelector('#code-finding-count');
+const urlsToggle = document.querySelector('#jadx-urls-toggle');
+const analysisDuration = document.querySelector('#analysis-duration');
 const jadxUrlResults = document.querySelector('#jadx-url-results');
 const jadxUrlCount = document.querySelector('#jadx-url-count');
+const jadxUrlNote = document.querySelector('#jadx-url-note');
 const jadxUrls = document.querySelector('#jadx-urls');
 const MAX_FILE = 1024 * 1024 * 1024;
+async function loadJadxVersion() {
+  if (!jadxVersion) return;
+  try {
+    const response = await fetch('../api/apk/version', { cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || ('JADX 版本接口返回 HTTP ' + response.status));
+    const version = String(data.version || '').trim();
+    if (!version) throw new Error('JADX 未返回版本信息。');
+    jadxVersion.textContent = 'JADX ' + version;
+    jadxVersion.title = '本机 JADX CLI 版本：' + version;
+  } catch (error) {
+    jadxVersion.textContent = 'JADX 版本不可用';
+    jadxVersion.title = error?.message || '无法读取本机 JADX 版本';
+  }
+}
+void loadJadxVersion();
 let analysisRun = 0;
 
 const permissionCatalog = {
@@ -104,6 +129,41 @@ function addInfo(label, value) {
   item.append(key, val); appInfo.append(item);
 }
 
+function bindExpandButton(button, hasMore, update) {
+  button.hidden = !hasMore;
+  button.classList.remove('is-expanded');
+  button.setAttribute('aria-expanded', 'false');
+  button.setAttribute('aria-label', button.dataset.collapsedLabel || '显示更多内容');
+  button.onclick = null;
+  if (!hasMore) return;
+  let expanded = false;
+  button.onclick = () => {
+    expanded = !expanded;
+    update(expanded);
+    button.classList.toggle('is-expanded', expanded);
+    button.setAttribute('aria-expanded', String(expanded));
+    button.setAttribute('aria-label', expanded
+      ? (button.dataset.expandedLabel || '收起更多内容')
+      : (button.dataset.collapsedLabel || '显示更多内容'));
+  };
+}
+
+function renderExpandableItems(container, items, limit, button) {
+  container.replaceChildren();
+  for (const item of items.slice(0, limit)) container.append(item);
+  const extraItems = items.slice(limit);
+  if (!extraItems.length) {
+    bindExpandButton(button, false, () => {});
+    return;
+  }
+  const extra = document.createElement('div');
+  extra.className = 'apk-extra-content';
+  for (const item of extraItems) extra.append(item);
+  extra.hidden = true;
+  container.append(extra);
+  bindExpandButton(button, true, expanded => { extra.hidden = !expanded; });
+}
+
 function renderMetadata(metadata) {
   appInfo.replaceChildren();
   addInfo('应用名称', metadata.appName || metadata.appLabel || metadata.package);
@@ -115,68 +175,107 @@ function renderMetadata(metadata) {
   addInfo('目标 Android API 级别（targetSdkVersion）', metadata.targetSdk);
 
   const rows = Array.isArray(metadata.permissions) ? metadata.permissions : [];
-  permissions.replaceChildren();
-  permissionCount.textContent = `${rows.length} 项`;
-  if (!rows.length) {
-    const empty = document.createElement('p');
-    empty.className = 'hint';
-    empty.textContent = '未声明 uses-permission 权限。';
-    permissions.append(empty);
-  }
-  for (const permission of rows) {
+  permissionCount.textContent = rows.length + ' 项';
+  const permissionItems = rows.map(permission => {
     const row = document.createElement('div'); row.className = 'apk-permission';
     const [label, explanation] = permissionDescription(permission);
     const heading = document.createElement('div'); heading.className = 'apk-permission-title';
     const name = document.createElement('strong'); name.textContent = label;
     const code = document.createElement('code'); code.textContent = permission;
     const detail = document.createElement('p'); detail.textContent = explanation;
-    heading.append(name, code); row.append(heading, detail); permissions.append(row);
+    heading.append(name, code); row.append(heading, detail); return row;
+  });
+  if (!permissionItems.length) {
+    const empty = document.createElement('p');
+    empty.className = 'hint';
+    empty.textContent = '未声明 uses-permission 权限。';
+    permissionItems.push(empty);
   }
+  renderExpandableItems(permissions, permissionItems, 4, permissionToggle);
+}
+
+function createArrowToggle(collapsedLabel, expandedLabel) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'apk-expand apk-evidence-toggle';
+  button.dataset.collapsedLabel = collapsedLabel;
+  button.dataset.expandedLabel = expandedLabel;
+  button.setAttribute('aria-label', collapsedLabel);
+  button.setAttribute('aria-expanded', 'false');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'm6 9 6 6 6-6');
+  svg.append(path);
+  button.append(svg);
+  return button;
 }
 
 function renderCodeFindings(findings) {
-  codeFindings.replaceChildren();
-  const heading = document.createElement('h3'); heading.textContent = '代码能力与 API 特征';
-  const note = document.createElement('p');
-  note.className = 'hint';
-  note.textContent = '以下依据反编译源码中的 API 名称和调用片段匹配；可能包含未实际执行的代码，也可能因混淆或动态加载而遗漏。';
-  codeFindings.append(heading, note);
-  if (!Array.isArray(findings) || !findings.length) {
-    const empty = document.createElement('p'); empty.className = 'hint';
-    empty.textContent = '没有识别到常见能力/API 特征。'; codeFindings.append(empty);
-  }
-  for (const finding of findings || []) {
+  const items = Array.isArray(findings) ? findings : [];
+  codeFindingCount.textContent = items.length + ' 类';
+  const cards = items.map(finding => {
     const card = document.createElement('article'); card.className = 'code-finding';
-    const title = document.createElement('strong'); title.textContent = `${finding.title}（${finding.count} 处线索）`;
+    const title = document.createElement('strong'); title.textContent = finding.title + '（' + finding.count + ' 处线索）';
     const description = document.createElement('p'); description.textContent = finding.description;
-    const list = document.createElement('ul');
-    for (const item of finding.evidence || []) {
+    const evidenceItems = (finding.evidence || []).map(item => {
       const entry = document.createElement('li');
       const location = document.createElement('span'); location.className = 'code-location';
-      location.textContent = `${item.file || ''}${item.line ? `:${item.line}` : ''}`;
+      location.textContent = (item.file || '') + (item.line ? ':' + item.line : '');
       const snippet = document.createElement('code'); snippet.textContent = item.snippet || item.api || '';
-      entry.append(location, snippet); list.append(entry);
+      entry.append(location, snippet);
+      return entry;
+    });
+    const list = document.createElement('ul');
+    for (const item of evidenceItems.slice(0, 2)) list.append(item);
+    card.append(title, description, list);
+    if (evidenceItems.length > 2) {
+      const extra = document.createElement('ul');
+      extra.className = 'apk-evidence-extra';
+      extra.hidden = true;
+      for (const item of evidenceItems.slice(2)) extra.append(item);
+      const toggle = createArrowToggle('显示更多代码证据', '收起更多代码证据');
+      card.append(extra, toggle);
+      bindExpandButton(toggle, true, expanded => { extra.hidden = !expanded; });
     }
-    card.append(title, description, list); codeFindings.append(card);
+    return card;
+  });
+  if (!cards.length) {
+    const empty = document.createElement('p');
+    empty.className = 'hint';
+    empty.textContent = '没有识别到常见能力/API 特征。';
+    cards.push(empty);
   }
+  renderExpandableItems(codeFindingItems, cards, 3, codeFindingsToggle);
   codeFindings.hidden = false;
+  codeFindingsSection.hidden = false;
 }
 
 function renderUrls(data) {
   const rows = Array.isArray(data.urls) ? data.urls : [];
-  jadxUrlCount.textContent = rows.length
-    ? `找到 ${rows.length} 个去重后的静态网址。它们来自反编译代码或资源中的明文字符串；运行时拼接、加密或网络下发的网址可能无法静态发现。`
-    : '没有在反编译代码和资源中发现明文静态网址。运行时拼接、加密或网络下发的网址无法通过此方式发现。';
+  jadxUrlCount.textContent = rows.length + ' 个';
+  jadxUrlNote.textContent = rows.length
+    ? '网址来自反编译代码或资源中的明文字符串；运行时拼接、加密或网络下发的网址可能无法静态发现。'
+    : '没有发现明文静态网址；运行时拼接、加密或网络下发的网址无法通过此方式发现。';
   jadxUrls.replaceChildren();
-  for (const item of rows) {
+  const rowItems = rows.map(item => {
     const row = document.createElement('tr');
     const urlCell = document.createElement('td');
     const url = document.createElement('code'); url.textContent = item.url || '';
     urlCell.append(url);
     const sourceCell = document.createElement('td');
-    sourceCell.textContent = `${item.file || ''}${item.line ? `:${item.line}` : ''}`;
-    row.append(urlCell, sourceCell); jadxUrls.append(row);
+    sourceCell.textContent = (item.file || '') + (item.line ? ':' + item.line : '');
+    row.append(urlCell, sourceCell);
+    return row;
+  });
+  for (let i = 0; i < rowItems.length; i++) {
+    rowItems[i].hidden = i >= 5;
+    jadxUrls.append(rowItems[i]);
   }
+  bindExpandButton(urlsToggle, rowItems.length > 5, expanded => {
+    for (let i = 5; i < rowItems.length; i++) rowItems[i].hidden = !expanded;
+  });
   jadxUrlResults.hidden = false;
 }
 
@@ -191,19 +290,40 @@ async function parseApk(file) {
   appInfo.replaceChildren();
   permissions.replaceChildren();
   codeFindings.replaceChildren();
+  codeFindingItems.replaceChildren();
   codeFindings.hidden = true;
-  permissionCount.textContent = '分析中';
-  jadxUrls.replaceChildren();
+  codeFindingsSection.hidden = true;
+  codeFindingsToggle.hidden = true;
+  urlsToggle.hidden = true;
   jadxUrlResults.hidden = true;
+  permissionToggle.hidden = true;
+  permissionCount.textContent = '分析中';
+  analysisDuration.textContent = '解析用时：0 秒';
+  jadxUrls.replaceChildren();
   void runJadxAnalysis(file);
+}
+
+function formatElapsed(milliseconds) {
+  const seconds = Math.floor(milliseconds / 1000);
+  return seconds < 60 ? seconds + ' 秒' : Math.floor(seconds / 60) + ' 分 ' + (seconds % 60) + ' 秒';
 }
 
 async function runJadxAnalysis(file) {
   const runId = ++analysisRun;
-  const loadingMessage = `正在使用 JADX 分析 ${file.name}，请稍候…`;
+  const loadingMessage = '正在使用 JADX 分析 ' + file.name + '，请稍候…';
   statusBox.hidden = false;
   showLoadingStatus(statusBox, loadingMessage);
-  showLoadingStatus(jadxStatus, '正在调用本机 JADX，解析 APK 结构与代码…');
+  const progressStartedAt = Date.now();
+  const progressMessage = '正在调用本机 JADX，解析 APK 结构与代码';
+  showLoadingStatus(jadxStatus, progressMessage + '（已用时 0 秒）');
+  jadxStatus.setAttribute('aria-live', 'off');
+  const progressText = jadxStatus.lastChild;
+  const progressTimer = window.setInterval(() => {
+    if (runId !== analysisRun) { window.clearInterval(progressTimer); return; }
+    const elapsed = formatElapsed(Date.now() - progressStartedAt);
+    progressText.textContent = progressMessage + '（已用时 ' + elapsed + '）';
+    analysisDuration.textContent = '解析用时：' + elapsed;
+  }, 1000);
   jadxUrlResults.hidden = true;
   jadxUrls.replaceChildren();
 
@@ -214,41 +334,49 @@ async function runJadxAnalysis(file) {
       body: file
     });
     const data = await response.json();
-    if (runId !== analysisRun) return;
-    if (!response.ok) throw new Error(data.error || `JADX 服务返回 HTTP ${response.status}`);
+    if (runId !== analysisRun) { window.clearInterval(progressTimer); return; }
+    if (!response.ok) throw new Error(data.error || ('JADX 服务返回 HTTP ' + response.status));
     if (data.tool !== 'jadx' || !data.metadata || !data.metadata.package) {
       throw new Error('JADX 未返回有效的 APK 结构信息，无法填充应用信息。');
     }
 
+    window.clearInterval(progressTimer);
+    const elapsed = formatElapsed(Date.now() - progressStartedAt);
+    analysisDuration.textContent = '解析用时：' + elapsed;
+    jadxStatus.setAttribute('aria-live', 'polite');
     renderMetadata(data.metadata);
     renderCodeFindings(data.codeFindings);
     renderUrls(data);
     const summary = [
-      `包名 ${data.metadata.package}`,
-      `${data.metadata.permissions?.length ?? 0} 项权限`,
-      data.metadata.launchers?.length ? `入口 ${data.metadata.launchers.join(', ')}` : ''
+      '包名 ' + data.metadata.package,
+      (data.metadata.permissions?.length ?? 0) + ' 项权限',
+      data.metadata.launchers?.length ? '入口 ' + data.metadata.launchers.join(', ') : ''
     ].filter(Boolean).join(' · ');
-    const sizeLabel = `${file.name}（${(file.size / 1024 / 1024).toFixed(1)} MB）`;
+    const sizeLabel = file.name + '（' + (file.size / 1024 / 1024).toFixed(1) + ' MB）';
     if (data.analysisComplete === false) {
       const warning = data.warning || '部分反编译未完成，代码和网址结果可能不完整。';
       jadxStatus.className = 'status warning';
-      jadxStatus.textContent = `Manifest 结构已解析；${warning}`;
-      showStatus(`结构解析完成：${sizeLabel}。${summary ? ` ${summary}。` : ''} ${warning}`, 'warning');
+      jadxStatus.textContent = 'Manifest 结构已解析；' + warning;
+      showStatus('结构解析完成：' + sizeLabel + '。解析用时 ' + elapsed + '。' + (summary ? ' ' + summary + '。' : '') + ' ' + warning, 'warning');
     } else {
-      const message = `JADX 分析完成：${sizeLabel}。${summary ? ` ${summary}。` : ''}`;
+      const message = 'JADX 分析完成：' + sizeLabel + '。解析用时 ' + elapsed + '。' + (summary ? ' ' + summary + '。' : '');
       jadxStatus.className = 'status success';
-      jadxStatus.textContent = 'JADX 分析完成，应用信息已更新。';
+      jadxStatus.textContent = 'JADX 分析完成，应用信息已更新。解析用时 ' + elapsed + '。';
       showStatus(message, 'success');
     }
   } catch (error) {
-    if (runId !== analysisRun) return;
+    if (runId !== analysisRun) { window.clearInterval(progressTimer); return; }
+    window.clearInterval(progressTimer);
+    const elapsed = formatElapsed(Date.now() - progressStartedAt);
+    analysisDuration.textContent = '解析用时：' + elapsed;
+    jadxStatus.setAttribute('aria-live', 'polite');
     const detail = error instanceof TypeError
       ? '无法连接本机 JADX 分析接口。请通过 launch.command（macOS）或 launch.bat（Windows）启动网站。'
       : error?.message || 'JADX 分析失败。';
     jadxStatus.className = 'status warning';
-    jadxStatus.textContent = detail;
+    jadxStatus.textContent = detail + ' 解析用时 ' + elapsed + '。';
     permissionCount.textContent = '分析失败';
-    showStatus(`JADX 未能完成分析：${detail}`, 'error');
+    showStatus('JADX 未能完成分析：' + detail + ' 解析用时 ' + elapsed + '。', 'error');
   }
 }
 

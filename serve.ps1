@@ -1,5 +1,6 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $root = [System.IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\') + '\'
+Add-Type -Path (Join-Path $PSScriptRoot 'scripts/ApkSourceScanner.cs')
 $listener = $null
 $port = 8765
 
@@ -47,6 +48,61 @@ function Send-Json($context, [int]$statusCode, $data) {
   $context.Response.Close()
 }
 
+function Resolve-JadxCommand {
+  $candidates = @()
+  if (-not [string]::IsNullOrWhiteSpace($env:JADX_BIN)) { $candidates += $env:JADX_BIN }
+  $candidates += (Join-Path $PSScriptRoot 'tools/jadx/bin-jadx.cmd')
+  foreach ($candidate in $candidates) {
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
+  }
+  $found = Get-Command jadx -ErrorAction SilentlyContinue
+  if ($null -ne $found -and -not [string]::IsNullOrWhiteSpace($found.Source)) { return $found.Source }
+  return $null
+}
+
+function New-JadxProcessStartInfo([string]$jadx, [string]$jadxArguments) {
+  $commandProcessor = $env:ComSpec
+  if ([string]::IsNullOrWhiteSpace($commandProcessor)) { $commandProcessor = Join-Path $env:SystemRoot 'System32/cmd.exe' }
+  if (-not (Test-Path -LiteralPath $commandProcessor -PathType Leaf)) { throw '无法找到 Windows 命令处理器 cmd.exe。' }
+  $quote = [string][char]34
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
+  $psi.FileName = $commandProcessor
+  $jadxCommand = $quote + $jadx + $quote + ' ' + $jadxArguments
+  # /s /c requires an outer quote pair so cmd.exe preserves quoted paths with spaces.
+  $psi.Arguments = '/d /s /c ' + $quote + $jadxCommand + $quote
+  $psi.WorkingDirectory = $PSScriptRoot
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  return $psi
+}
+
+function Invoke-JadxVersion($context) {
+  if ($context.Request.HttpMethod -ne 'GET') {
+    $context.Response.Headers['Allow'] = 'GET'
+    Send-Json $context 405 @{ error = '此接口只接受 GET 请求。' }
+    return
+  }
+  $jadx = Resolve-JadxCommand
+  if (-not $jadx) { Send-Json $context 503 @{ error = '未找到 JADX 运行包。' }; return }
+  try {
+    $process = [System.Diagnostics.Process]::Start((New-JadxProcessStartInfo $jadx '--version'))
+    $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+    $stderrTask = $process.StandardError.ReadToEndAsync()
+    if (-not $process.WaitForExit(30000)) {
+      $process.Kill()
+      $process.WaitForExit()
+      Send-Json $context 504 @{ error = '读取 JADX 版本超时。' }
+      return
+    }
+    $version = ($stdoutTask.Result + [Environment]::NewLine + $stderrTask.Result).Trim()
+    if ($process.ExitCode -ne 0 -or -not $version) { Send-Json $context 503 @{ error = '无法读取 JADX 版本。' }; return }
+    Send-Json $context 200 @{ tool = 'jadx'; version = $version }
+  } catch {
+    Send-Json $context 500 @{ error = ('读取 JADX 版本失败：' + $_.Exception.Message) }
+  }
+}
 function Invoke-JadxAnalysis($context) {
   $origin = $context.Request.Headers['Origin']
   if ($origin -and $origin -notmatch '^http://(127\.0\.0\.1|localhost)(:\d+)?$') {
@@ -67,17 +123,11 @@ function Invoke-JadxAnalysis($context) {
     return
   }
 
-  $jadx = $env:JADX_BIN
-  if ([string]::IsNullOrWhiteSpace($jadx)) { $jadx = Join-Path $PSScriptRoot 'tools\jadx\bin-jadx.cmd' }
-  if (-not (Test-Path -LiteralPath $jadx -PathType Leaf)) {
-    $found = Get-Command jadx -ErrorAction SilentlyContinue
-    if ($null -ne $found) { $jadx = $found.Source }
-  }
-  if (-not (Test-Path -LiteralPath $jadx -PathType Leaf)) {
-    Send-Json $context 503 @{ error = '未找到 JADX 运行包。请运行 scripts\setup-jadx.ps1 下载统一便携包，无需安装 Java。' }
+  $jadx = Resolve-JadxCommand
+  if (-not $jadx) {
+    Send-Json $context 503 @{ error = '未找到 JADX 运行包。请运行 scripts/setup-jadx.ps1 下载统一便携包，无需安装 Java。' }
     return
   }
-
   $work = Join-Path ([System.IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString('N'))
   New-Item -ItemType Directory -Path $work -Force | Out-Null
   try {
@@ -85,13 +135,10 @@ function Invoke-JadxAnalysis($context) {
     $output = Join-Path $work 'decoded'
     $stream = [System.IO.File]::Create($apk)
     try { $context.Request.InputStream.CopyTo($stream) } finally { $stream.Dispose() }
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $env:ComSpec
-    $psi.Arguments = '/d /s /c call "' + $jadx + '" --log-level ERROR --threads-count 4 --output-dir "' + $output + '" "' + $apk + '"'
-    $psi.UseShellExecute = $false
-    $psi.CreateNoWindow = $true
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
+    $threadCount = [Math]::Min([Math]::Max([Environment]::ProcessorCount, 1), 8)
+    $quote = [string][char]34
+    $jadxArguments = '--log-level ERROR --threads-count ' + $threadCount + ' --decompilation-mode simple --output-dir ' + $quote + $output + $quote + ' ' + $quote + $apk + $quote
+    $psi = New-JadxProcessStartInfo $jadx $jadxArguments
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo = $psi
     [void]$process.Start()
@@ -155,63 +202,17 @@ function Invoke-JadxAnalysis($context) {
       }
     }
 
-    $urls = @()
-    $seen = @{}
-    $pattern = 'https?://[A-Za-z0-9._~:/?#\[\]@!$&''()*+,;=%-]+'
-    $codeRules = @(
-      @{ title = '网络通信'; description = '引用 HTTP、Socket、OkHttp、Retrofit 或 WebSocket 等网络通信 API。'; pattern = '\b(HttpURLConnection|HttpsURLConnection|OkHttpClient|Retrofit|WebSocket|Socket|URL)\b|\b(okhttp3|retrofit2)\.' },
-      @{ title = '位置与定位'; description = '引用 Android 定位服务或位置更新 API。'; pattern = '\b(LocationManager|FusedLocationProviderClient|requestLocationUpdates|getLastKnownLocation)\b' },
-      @{ title = '相机与录音'; description = '引用相机、音频采集或媒体录制 API。'; pattern = '\b(CameraManager|CameraDevice|CameraX|CameraCaptureSession|MediaRecorder|AudioRecord)\b' },
-      @{ title = 'WebView 与 JavaScript 桥接'; description = '引用内嵌网页组件或 JavaScript 与原生代码桥接 API。'; pattern = '\b(WebView|addJavascriptInterface|setJavaScriptEnabled|evaluateJavascript)\b' },
-      @{ title = '动态加载与反射'; description = '引用动态加载 DEX、类加载器或反射 API。'; pattern = '\b(DexClassLoader|InMemoryDexClassLoader|PathClassLoader|Class\.forName|loadClass)\b' },
-      @{ title = '进程与原生代码'; description = '引用启动系统进程或加载原生库的 API。'; pattern = '\b(ProcessBuilder|Runtime\.getRuntime\(\)\.exec|System\.loadLibrary|System\.load)\b' },
-      @{ title = '加密与摘要'; description = '引用加密、密钥库或消息摘要 API。'; pattern = '\b(Cipher\.getInstance|MessageDigest\.getInstance|KeyStore\.getInstance|Mac\.getInstance)\b' },
-      @{ title = '设备标识与电话信息'; description = '引用 Android ID、电话管理器或设备序列号相关 API。'; pattern = '\b(ANDROID_ID|TelephonyManager|Build\.SERIAL|getImei|getDeviceId)\b' },
-      @{ title = '无障碍与屏幕覆盖'; description = '引用无障碍服务或覆盖其他应用窗口的相关 API。'; pattern = '\b(AccessibilityService|TYPE_APPLICATION_OVERLAY|SYSTEM_ALERT_WINDOW)\b' },
-      @{ title = '剪贴板'; description = '引用读取或写入系统剪贴板的 API。'; pattern = '\b(ClipboardManager|ClipData\.newPlainText|getPrimaryClip)\b' },
-      @{ title = '文件读写'; description = '引用文件、流或共享存储访问 API。'; pattern = '\b(FileInputStream|FileOutputStream|RandomAccessFile|getExternalFilesDir|MediaStore)\b' }
-    )
-    $codeFindingStates = @{}
-    foreach ($rule in $codeRules) {
-      $codeFindingStates[$rule.title] = @{
-        title = $rule.title
-        description = $rule.description
-        count = 0
-        evidence = [System.Collections.Generic.List[object]]::new()
-      }
+    $scanResult = [ApkSourceScanner]::Scan($output)
+    $urls = $scanResult.Urls
+    $codeFindingResults = $scanResult.CodeFindings
+    $jadxWarning = $null
+    if ($process.ExitCode -ne 0) {
+      $jadxWarning = 'JADX 已生成 Manifest，但反编译进程退出码为 ' + $process.ExitCode + '；代码和网址结果可能不完整。'
+      $log = $stderrTask.Result + [Environment]::NewLine + $stdoutTask.Result
+      $diagnostics = @($log -split '\r?\n' | Where-Object { $_ -match '^\s*ERROR\s*-' } | Select-Object -First 8)
+      $detail = ($diagnostics -join '；').Trim()
+      if ($detail) { $jadxWarning += ' 诊断信息：' + $detail }
     }
-    $sourceFiles = Get-ChildItem -LiteralPath $output -Recurse -File | Where-Object { $_.Extension -in '.java', '.kt', '.xml', '.json' } | Select-Object -First 25000
-    foreach ($source in $sourceFiles) {
-      if ($source.Length -gt 12MB) { continue }
-      $relative = $source.FullName.Substring($output.Length).TrimStart('\')
-      $lineNo = 0
-      foreach ($line in [System.IO.File]::ReadLines($source.FullName)) {
-        $lineNo++
-        $normalized = $line.Replace('\/', '/')
-        foreach ($match in [regex]::Matches($normalized, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)) {
-          $url = $match.Value.TrimEnd([char[]]@('.', ',', ';', ')', ']', '}', '"', "'"))
-          if (-not $seen.ContainsKey($url)) {
-            $seen[$url] = $true
-            $urls += @{ url = $url; file = $relative; line = $lineNo }
-            if ($urls.Count -ge 10000) { break }
-          }
-        }
-        foreach ($rule in $codeRules) {
-          $match = [regex]::Match($normalized, $rule.pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-          if (-not $match.Success) { continue }
-          $state = $codeFindingStates[$rule.title]
-          $state.count++
-          if ($state.evidence.Count -lt 30) {
-            $snippet = $normalized.Trim()
-            if ($snippet.Length -gt 240) { $snippet = $snippet.Substring(0, 240) }
-            [void]$state.evidence.Add(@{ api = $match.Value; file = $relative; line = $lineNo; snippet = $snippet })
-          }
-        }
-        if ($urls.Count -ge 10000) { break }
-      }
-      if ($urls.Count -ge 10000) { break }
-    }
-    $codeFindingResults = @($codeRules | ForEach-Object { $codeFindingStates[$_.title] } | Where-Object { $_.count -gt 0 })
     Send-Json $context 200 @{
       tool = 'jadx'
       metadata = @{
@@ -225,13 +226,13 @@ function Invoke-JadxAnalysis($context) {
         permissions = @($permissions | Select-Object -Unique)
         launchers = @($launchers | Select-Object -Unique)
       }
-      urls = $urls
-      urlCount = $urls.Count
+      urls = $scanResult.Urls
+      urlCount = $scanResult.UrlCount
       codeFindings = $codeFindingResults
       sourcesScanned = $true
       jadxExitCode = $process.ExitCode
       analysisComplete = ($process.ExitCode -eq 0)
-      warning = if ($process.ExitCode -eq 0) { $null } else { "JADX 已生成 Manifest，但反编译进程退出码为 $($process.ExitCode)；代码和网址结果可能不完整。" }
+      warning = $jadxWarning
     }
   } catch {
     Send-Json $context 500 @{ error = "本地 JADX 分析失败：$($_.Exception.Message)" }
@@ -245,6 +246,10 @@ try {
     $context = $listener.GetContext()
     try {
       $relative = [Uri]::UnescapeDataString($context.Request.Url.AbsolutePath.TrimStart('/'))
+      if ($relative -eq 'api/apk/version') {
+        Invoke-JadxVersion $context
+        continue
+      }
       if ($relative -eq 'api/apk/analyze') {
         Invoke-JadxAnalysis $context
         continue

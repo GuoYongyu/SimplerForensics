@@ -3,3 +3,28 @@
 .impact-badge.path-badge{color:#596c83;background:#f3f6fa;border:1px solid #e1e8f0}.path-purpose,.path-edit,.command-note{font-size:13px;line-height:1.75;color:#536982;margin:9px 0}.path-purpose b,.path-edit b{color:#304965}.path-edit{padding:10px 12px;border-left:3px solid #88a8e5;background:#f6f8fc;border-radius:0 8px 8px 0}
 
 .category-rows{display:grid;gap:12px;width:100%}.collection-row,.subcategory-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.collection-row{padding-bottom:11px;border-bottom:1px solid #edf1f6}.subcategory-row{padding:2px 0 0 12px;border-left:3px solid #dce7f7}.subcategory-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #e5eaf1;background:#f8fafd;color:#63758b;border-radius:8px;padding:7px 10px;font-size:12px;cursor:pointer;transition:background .15s,border .15s,color .15s}.subcategory-chip span{color:#98a5b5;font-size:10px}.subcategory-chip:hover{border-color:#b8c9e2;background:#f2f6fc}.subcategory-chip.active{border-color:#cbdcff;background:#eaf1ff;color:#2559c3;font-weight:700}.subcategory-chip.active span{color:#4775ce}
+/* Wider layout and readable command references */
+.linux-shell{max-width:1600px;width:94vw}
+.linux-shell .page-heading h1{font-size:clamp(34px,3.2vw,50px)}
+.linux-shell .page-heading p{font-size:17px;line-height:1.8}
+.linux-shell .search-panel{padding:30px}
+.linux-shell .search-row .field{height:58px;font-size:17px}
+.linux-shell .search-row .btn{height:54px;font-size:15px}
+.linux-shell .category-chip{font-size:14px;padding:10px 15px}
+.linux-shell .category-chip span{font-size:12px}
+.linux-shell .results-toolbar{font-size:15px}
+.linux-shell .command-grid{gap:18px}
+.linux-shell .command-card{padding:22px;border-radius:16px}
+.linux-shell .command-card h2{font-size:22px}
+.linux-shell .command-description{font-size:15px;line-height:1.8}
+.linux-shell .command-syntax code{font-size:14px}
+.linux-shell .example-line{padding:10px}
+.linux-shell .example-line code{font-size:13px;line-height:1.7}
+.linux-shell .copy-command{font-size:12px;padding:7px 10px}
+.linux-shell .category-label{font-size:12px}
+.linux-shell .impact-badge{font-size:11px}
+.linux-shell .source-note p{font-size:15px}
+@media(max-width:760px){.linux-shell{width:92vw}.linux-shell .search-panel{padding:20px}.linux-shell .page-heading p{font-size:16px}}
+
+.linux-shell code{font-size:15px!important}
+.linux-shell .example-line code,.linux-shell .command-syntax code{font-size:15px!important;line-height:1.7}
