@@ -1,5 +1,10 @@
 (() => {
   const $ = s => document.querySelector(s);
+  const dropHint=$('#drop .hint');dropHint.textContent+=' 单文件上限 512 MiB；内部签名扫描分块运行，可取消。';
+  const cancelButton=document.createElement('button');cancelButton.id='cancel-analysis';cancelButton.type='button';cancelButton.className='btn btn-danger';cancelButton.textContent='取消分析';cancelButton.disabled=true;
+  const analysisProgress=document.createElement('progress');analysisProgress.id='analysis-progress';analysisProgress.className='hex-progress';analysisProgress.max=100;analysisProgress.value=0;analysisProgress.hidden=true;analysisProgress.setAttribute('aria-label','签名扫描进度');
+  const analysisControls=document.createElement('div');analysisControls.className='button-row';analysisControls.append(cancelButton);
+  $('#status').before(analysisControls,analysisProgress);
   const known = [
     {name:'JPEG 图像',ext:['jpg','jpeg'],hex:'FFD8FF',kind:'jpeg'},
     {name:'PNG 图像',ext:['png'],hex:'89504E470D0A1A0A',kind:'png'},
@@ -27,6 +32,7 @@
     {name:'Mach-O 可执行文件',ext:['dylib','macho'],hex:'FEEDFACE|FEEDFACF|CEFAEDFE|CFFAEDFE'}
   ];
   let pngRawCache=null;
+  let analysisRun=0;
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const ascii=(b,o,n)=>String.fromCharCode(...b.subarray(o,o+n));
   const hexBytes=s=>s.match(/../g).map(x=>parseInt(x,16));
@@ -41,17 +47,25 @@
     if(b.length>=8&&ascii(b,4,4)==='ftyp'&&!found.some(k=>k.kind==='mp4'))found.push(known.find(k=>k.kind==='mp4'));
     return found;
   }
-  function scan(b){
-    const hits=[],byFirst=new Map();
+  async function scan(b,onProgress,isCancelled){
+    const hits=[],byFirst=new Map();let hitLimitReached=false;
     for(const k of known)for(const s of k.hex.split('|')){const pattern={k,s,bytes:hexBytes(s)};const first=pattern.bytes[0];if(!byFirst.has(first))byFirst.set(first,[]);byFirst.get(first).push(pattern);}
-    for(let i=1;i<b.length;i++){
-      for(const p of byFirst.get(b[i])||[]){if(i+p.bytes.length>b.length)continue;let ok=true;for(let j=1;j<p.bytes.length;j++)if(b[i+j]!==p.bytes[j]){ok=false;break;}if(ok&&(!p.k.check||p.k.check(b,i)))hits.push({offset:i,name:p.k.name,hex:p.s,ext:p.k.ext[0]});}
-      if(i>=5&&b[i]===0x66&&b[i+1]===0x74&&b[i+2]===0x79&&b[i+3]===0x70){const start=i-4;if(start>0)hits.push({offset:start,name:'MP4 / ISO BMFF 音视频',hex:'ftyp',ext:'mp4'});}
+    const chunkSize=1024*1024;
+    for(let start=1;start<b.length;start+=chunkSize){
+      if(isCancelled())return null;
+      const end=Math.min(b.length,start+chunkSize);
+      for(let i=start;i<end;i++){
+        for(const p of byFirst.get(b[i])||[]){if(i+p.bytes.length>b.length)continue;let ok=true;for(let j=1;j<p.bytes.length;j++)if(b[i+j]!==p.bytes[j]){ok=false;break;}if(ok&&(!p.k.check||p.k.check(b,i)))hits.push({offset:i,name:p.k.name,hex:p.s,ext:p.k.ext[0]});}
+        if(i>=5&&b[i]===0x66&&b[i+1]===0x74&&b[i+2]===0x79&&b[i+3]===0x70){const position=i-4;if(position>0)hits.push({offset:position,name:'MP4 / ISO BMFF 音视频',hex:'ftyp',ext:'mp4'});}
+        if(hits.length>=1000){hitLimitReached=true;break;}
+      }
+      onProgress(Math.min(100,Math.round(end/Math.max(1,b.length)*100)));
       if(hits.length>=1000)break;
+      await new Promise(resolve=>setTimeout(resolve,0));
     }
     hits.sort((a,b)=>a.offset-b.offset);
     const unique=[];for(const h of hits)if(!unique.some(x=>x.offset===h.offset&&x.name===h.name))unique.push(h);
-    return unique.slice(0,80);
+    return {hits:unique.slice(0,80),hitLimitReached};
   }
   function dimensions(b,format){
     if(format==='PNG'&&b.length>=24)return `PNG IHDR 声明尺寸：${u32be(b,16)} × ${u32be(b,20)} px。`;
@@ -164,10 +178,24 @@
     return `<h3 style="margin:18px 0 8px">按疑似边界拆分（需人工复核）</h3><p class="hint">以下示例以偏移作为分段起点，最多展示前 5 个起点。先在源文件所在目录打开终端，再运行命令。文件名已做 shell 转义。macOS / Linux：</p><pre class="result-box">${esc(unix)}</pre><p class="hint">Windows PowerShell：</p><pre class="result-box">${esc(ps)}</pre>`;
   }
   function analyze(file){
+    if(!file)return;
+    const run=++analysisRun;
+    $('#analysis').hidden=true;
+    $('#cancel-analysis').disabled=false;
+    $('#analysis-progress').hidden=false;
+    $('#analysis-progress').value=0;
     $('#status').className='status';$('#status').textContent='正在本地读取并扫描文件…';
-    if(file.size>512*1024*1024){$('#status').className='status error';$('#status').textContent='文件超过 512 MiB，本页为避免浏览器内存占用过高而停止分析。';return;}
+    if(file.size>512*1024*1024){$('#status').className='status error';$('#status').textContent='文件超过 512 MiB，本页为避免浏览器内存占用过高而停止分析。';$('#cancel-analysis').disabled=true;$('#analysis-progress').hidden=true;return;}
     file.arrayBuffer().then(async buf=>{
-      const b=new Uint8Array(buf),ext=extOf(file.name),atStart=identify(b),hits=scan(b),primary=atStart[0],format=primary?.name.split(' ')[0]||'未知';
+      if(run!==analysisRun)return;
+      const b=new Uint8Array(buf),ext=extOf(file.name),atStart=identify(b),primary=atStart[0],format=primary?.name.split(' ')[0]||'未知';
+      $('#status').textContent='正在分块扫描内部签名…';
+      const scanResult=await scan(b,value=>{if(run===analysisRun){$('#analysis-progress').value=value;$('#status').textContent=`正在扫描内部签名… ${value}%`;}},()=>run!==analysisRun);
+      if(run!==analysisRun||!scanResult)return;
+      const {hits,hitLimitReached}=scanResult;
+      $('#cancel-analysis').disabled=true;
+      $('#analysis-progress').hidden=true;
+      $('#status').textContent='签名扫描完成，正在整理结构与格式线索…';
       $('#analysis').hidden=false;
       let identity=`文件：${file.name}\n扩展名：${ext?'.'+ext:'（无）'}\n文件大小：${fmt(file.size)} 字节\n文件头判断：${primary?primary.name:'未识别常见文件头'}`;
       if(atStart.length>1)identity+=`\n起始处同时匹配：${atStart.map(x=>x.name).join('、')}`;
@@ -180,12 +208,14 @@
       const dim=dimensions(b,format),struct=inspectStructure(b,format);
       let integrity=(dim?dim+'\n':'')+struct.join('\n');
       if(format==='PNG')integrity+='\n'+await estimatePngFromPixels(b);
+      if(run!==analysisRun)return;
       if(['PNG','JPEG','WebP','GIF','BMP'].includes(format))integrity+='\n\n原始图片尺寸无法仅从当前尺寸元数据证明；编码数据中的候选尺寸也不等于取证结论。';
       $('#integrity').textContent=integrity;
       $('#stego').textContent=stegoAnalysis(b,format);
-      $('#status').className='status '+(hits.length||struct.some(x=>/多出|大于实际|异常|未找到/.test(x))?'warning':'success');$('#status').textContent='分析完成。签名、偏移和结构异常均是线索，应结合上下文核实。';
-    }).catch(e=>{$('#status').className='status error';$('#status').textContent=`读取失败：${e.message||e}`;});
+      $('#status').className='status '+(hits.length||struct.some(x=>/多出|大于实际|异常|未找到/.test(x))?'warning':'success');$('#status').textContent=`分析完成。签名、偏移和结构异常均是线索，应结合上下文核实。${hitLimitReached?' 扫描达到 1000 个命中上限，可能尚未检查文件后续部分；页面最多展示 80 条。':''}`;
+    }).catch(e=>{if(run===analysisRun){$('#status').className='status error';$('#status').textContent=`读取失败：${e.message||e}`;}}).finally(()=>{if(run===analysisRun){$('#cancel-analysis').disabled=true;$('#analysis-progress').hidden=true;}});
   }
+  $('#cancel-analysis').addEventListener('click',()=>{analysisRun++;$('#cancel-analysis').disabled=true;$('#analysis-progress').hidden=true;$('#status').className='status warning';$('#status').textContent='分析已取消；未完成的结果不会显示。';});
   $('#file').addEventListener('change',e=>analyze(e.target.files[0]));
   $('#drop').addEventListener('dragover',e=>{e.preventDefault();$('#drop').classList.add('dragover');});
   $('#drop').addEventListener('dragleave',()=>$('#drop').classList.remove('dragover'));

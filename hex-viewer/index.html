@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>十六进制查看器 · SimplerForensic</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261018-2"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensic<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>十六进制查看器</span></div>
+    <section class="page-heading"><div><p class="kicker">02 / HEX VIEWER</p><h1>十六进制查看器</h1><p>按需读取文件字节，查看偏移、搜索字节序列并导出指定范围。</p></div><span class="chip">只读 · 分块读取</span></section>
+    <section class="panel">
+      <label class="field-label" for="file">选择要查看的文件</label>
+      <input class="file-input" id="file" type="file">
+      <div id="file-info" class="subtle" aria-live="polite"></div>
+      <div id="status" class="status" role="status" aria-live="polite">选择文件开始查看。原文件不会被修改或上传。</div>
+    </section>
+    <section id="viewer" hidden>
+      <section class="panel">
+        <div class="hex-toolbar">
+          <label><span class="field-label">起始偏移（十进制或 0x 十六进制）</span><input class="field mono" id="offset" value="0" inputmode="text"></label>
+          <label><span class="field-label">每页字节数</span><select class="field" id="page-size"><option value="4096">4 KiB</option><option value="16384">16 KiB</option><option value="65536">64 KiB</option></select></label>
+          <div class="button-row"><button class="btn" id="previous" type="button">上一页</button><button class="btn" id="next" type="button">下一页</button><button class="btn btn-primary" id="go" type="button">跳转</button></div>
+        </div>
+        <div class="hex-legend"><span>偏移</span><span>十六进制字节</span><span>ASCII 可打印字符 · 其他显示为 ·</span></div>
+        <div class="hex-dump-wrap" tabindex="0" aria-label="十六进制内容">
+          <pre id="hex-output" class="hex-dump"></pre>
+        </div>
+        <div id="page-info" class="subtle" aria-live="polite"></div>
+      </section>
+      <section class="tool-layout">
+        <section class="panel">
+          <h2>搜索字节</h2>
+          <label class="field-label" for="search-value">搜索内容</label>
+          <div class="field-row"><input class="field" id="search-value" placeholder="例如：50 4B 03 04"><select class="field" id="search-mode"><option value="hex">十六进制</option><option value="text">UTF-8 文本</option></select></div>
+          <div class="button-row"><button class="btn btn-primary" id="search" type="button">搜索整个文件</button><button class="btn" id="cancel-search" type="button" disabled>取消</button></div>
+          <progress class="hex-progress" id="search-progress" max="1" value="0" hidden></progress>
+          <div id="search-results" class="status" role="status" aria-live="polite" hidden></div>
+        </section>
+        <section class="panel">
+          <h2>导出选定范围</h2>
+          <p class="hint">将原始字节范围保存为新文件；原文件保持不变。单次导出上限为 64 MiB。</p>
+          <div class="field-row"><label><span class="field-label">起始偏移（十进制）</span><input class="field" id="range-start" type="number" min="0" value="0"></label><label><span class="field-label">长度（字节）</span><input class="field" id="range-length" type="number" min="1" value="256"></label></div>
+          <div class="button-row"><button class="btn" id="use-page" type="button">使用当前页范围</button><button class="btn btn-primary" id="export-range" type="button">导出范围</button></div>
+          <div id="export-status" class="status" role="status" aria-live="polite" hidden></div>
+        </section>
+      </section>
+    </section>
+    <section class="panel"><h2>查看说明</h2><p class="hint">十六进制视图展示文件原始字节，不会自动推断文件格式。搜索会逐块读取完整文件，最多列出前 100 个匹配位置；大文件搜索可随时取消。偏移均从文件开头按 0 开始。</p></section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+</body>
+</html>

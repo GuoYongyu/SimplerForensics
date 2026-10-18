@@ -19,21 +19,49 @@
       <h1>常用工具，<span>触手可及。</span></h1>
       <p class="hero-copy">轻量、离线、即开即用。你的输入和文件只在当前设备上处理。</p>
     </section>
-    <section class="tool-grid" aria-label="工具导航">
-      <a class="tool-card" href="base64/index.html"><span class="card-icon"><img src="assets/icons/base64.svg" alt=""></span><span class="card-index">01 / ENCODE</span><h2>Base64 编解码</h2><p>按行批量转换文本，支持标准及 URL-safe 格式。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="timestamp/index.html"><span class="card-icon"><img src="assets/icons/timestamp.svg" alt=""></span><span class="card-index">02 / TIME</span><h2>时间戳转换</h2><p>秒、毫秒与日期时间互转，支持时区选择和批量输入。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="md5/index.html"><span class="card-icon"><img src="assets/icons/md5.svg" alt=""></span><span class="card-index">03 / HASH</span><h2>MD5 字典匹配</h2><p>使用本地字典查找 MD5 候选值，最多 8 个并行线程。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="signatures/index.html"><span class="card-icon"><img src="assets/icons/signature.svg" alt=""></span><span class="card-index">04 / BINARY</span><h2>文件格式速查</h2><p>搜索常见格式的文件头、文件尾签名和已知字段。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="image-fix/index.html"><span class="card-icon"><img src="assets/icons/image-fix.svg" alt=""></span><span class="card-index">05 / IMAGE</span><h2>图片尺寸元数据修复</h2><p>分析 JPEG、PNG、WebP 中记录的尺寸；只修改尺寸字段，另存修复副本。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="file-disguise/index.html"><span class="card-icon"><img src="assets/icons/file-disguise.svg" alt=""></span><span class="card-index">06 / FORENSICS</span><h2>文件伪装分析</h2><p>比对扩展名与文件头，查找拼接数据，并初筛 PNG / PCM WAV 的低位隐写线索。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="apk/index.html"><span class="card-icon"><img src="assets/icons/apk-file.svg" alt=""></span><span class="card-index">07 / ANDROID</span><h2>APK 元数据解析</h2><p>读取应用名称、包名、版本、主入口及声明的权限，整个过程在本地浏览器完成。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="qr-reader/index.html"><span class="card-icon"><img src="assets/icons/qr.svg" alt=""></span><span class="card-index">08 / QR CODE</span><h2>二维码识别</h2><p>上传或拖入二维码图片，在本地读取其中的文本、网址或其他信息。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="linux/index.html"><span class="card-icon"><img src="assets/icons/linux-terminal.svg" alt=""></span><span class="card-index">09 / LINUX</span><h2>Linux 指令检索</h2><p>按用途和关键词搜索常用命令，查看示例、说明与操作影响。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="market-search/index.html"><span class="card-icon">法</span><span class="card-index">10 / MARKET LAW</span><h2>市场监管题库与法规检索</h2><p>离线搜索题库及市场监管法规资料，支持模糊匹配和本地扩充。</p><span class="card-arrow">↗</span></a>
-      <a class="tool-card" href="windows/index.html"><span class="card-icon"><img src="assets/icons/windows.svg" alt=""></span><span class="card-index">11 / WINDOWS</span><h2>Windows 系统配置指南</h2><p>了解系统目录、查看硬件与 Windows 配置，并读懂注册表结构和常见信息。</p><span class="card-arrow">↗</span></a>
+    <section class="tool-search panel" aria-label="查找工具">
+      <label class="field-label" for="tool-search-input">快速查找工具</label>
+      <input class="field" id="tool-search-input" type="search" placeholder="搜索名称或用途，例如：文件头、十六进制、APK">
+      <p class="hint">除工具名称外，还会检索功能页说明、Linux 命令索引和市场监管题库/法规全文。首次建立索引会在本机读取约 13 MB 法规全文，不会上传。</p>
+      <p class="hint" id="tool-search-status" role="status" aria-live="polite">按用途浏览，或输入关键词筛选。</p>
+      <div id="tool-search-results" class="tool-search-results" aria-live="polite" hidden></div>
+    </section>
+    <section class="tool-category" aria-labelledby="category-file-title">
+      <div class="tool-category-heading"><div><p class="kicker">01 / FILE ANALYSIS</p><h2 id="category-file-title">文件分析</h2></div><p>查看文件结构、格式线索、元数据和字节内容。</p></div>
+      <div class="tool-grid" aria-label="文件分析工具">
+        <a class="tool-card" data-search="文件格式 签名 文件头 文件尾 二进制" href="signatures/index.html"><span class="card-icon"><img src="assets/icons/signature.svg" alt=""></span><span class="card-index">01 / SIGNATURE</span><h2>文件格式速查</h2><p>搜索常见格式的文件头、文件尾签名和已知字段。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="十六进制 hex 字节 偏移 查看器 搜索" href="hex-viewer/index.html"><span class="card-icon">HEX</span><span class="card-index">02 / HEX VIEWER</span><h2>十六进制查看器</h2><p>按偏移查看原始字节，搜索字节序列并导出选定范围。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="元数据 EXIF 图片 PDF WAV PNG WebP TIFF" href="metadata-viewer/index.html"><span class="card-icon">META</span><span class="card-index">03 / METADATA</span><h2>文件元数据查看</h2><p>提取常见文件中的可读元数据，并显示字段来源与解析限制。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="文件 伪装 扩展名 内部签名 拼接 隐写 PNG WAV" href="file-disguise/index.html"><span class="card-icon"><img src="assets/icons/file-disguise.svg" alt=""></span><span class="card-index">04 / FILE TRIAGE</span><h2>文件伪装分析</h2><p>比对扩展名与文件头，查找内部签名、结构异常及有限的隐写线索。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="图片尺寸 元数据 修复 JPEG PNG WebP" href="image-fix/index.html"><span class="card-icon"><img src="assets/icons/image-fix.svg" alt=""></span><span class="card-index">05 / IMAGE</span><h2>图片尺寸元数据修复</h2><p>读取 JPEG、PNG、WebP 尺寸字段；修改后另存派生副本，不覆盖原图。</p><span class="card-arrow">↗</span></a>
+      </div>
+    </section>
+    <section class="tool-category" aria-labelledby="category-mobile-title">
+      <div class="tool-category-heading"><div><p class="kicker">02 / MOBILE & MEDIA</p><h2 id="category-mobile-title">移动设备与媒体</h2></div><p>解析应用包和图像中的可识别内容。</p></div>
+      <div class="tool-grid" aria-label="移动设备与媒体工具">
+        <a class="tool-card" data-search="APK Android Manifest 权限 JADX 静态分析" href="apk/index.html"><span class="card-icon"><img src="assets/icons/apk-file.svg" alt=""></span><span class="card-index">06 / ANDROID</span><h2>APK 元数据解析</h2><p>读取应用名称、包名、版本、入口、权限及静态代码线索。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="二维码 图片 识别 QR" href="qr-reader/index.html"><span class="card-icon"><img src="assets/icons/qr.svg" alt=""></span><span class="card-index">07 / QR CODE</span><h2>二维码识别</h2><p>在本地读取二维码图片中的文本、网址或其他信息。</p><span class="card-arrow">↗</span></a>
+      </div>
+    </section>
+    <section class="tool-category" aria-labelledby="category-utility-title">
+      <div class="tool-category-heading"><div><p class="kicker">03 / DATA UTILITIES</p><h2 id="category-utility-title">数据处理</h2></div><p>转换常见编码、时间值，或使用本地字典查找候选。</p></div>
+      <div class="tool-grid" aria-label="数据处理工具">
+        <a class="tool-card" data-search="Base64 编码 解码 URL-safe" href="base64/index.html"><span class="card-icon"><img src="assets/icons/base64.svg" alt=""></span><span class="card-index">08 / ENCODE</span><h2>Base64 编解码</h2><p>按行批量转换文本，支持标准及 URL-safe 格式。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="时间戳 日期 时间 时区转换" href="timestamp/index.html"><span class="card-icon"><img src="assets/icons/timestamp.svg" alt=""></span><span class="card-index">09 / TIME</span><h2>时间戳转换</h2><p>秒、毫秒与日期时间互转，支持时区选择和批量输入。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="MD5 字典 匹配 哈希 候选" href="md5/index.html"><span class="card-icon"><img src="assets/icons/md5.svg" alt=""></span><span class="card-index">10 / MD5</span><h2>MD5 字典匹配</h2><p>使用本地字典查找 MD5 候选值，最多 8 个并行线程。</p><span class="card-arrow">↗</span></a>
+      </div>
+    </section>
+    <section class="tool-category" aria-labelledby="category-reference-title">
+      <div class="tool-category-heading"><div><p class="kicker">04 / REFERENCE</p><h2 id="category-reference-title">系统与资料检索</h2></div><p>查找系统操作说明、法规和离线参考资料。</p></div>
+      <div class="tool-grid" aria-label="系统与资料检索工具">
+        <a class="tool-card" data-search="Linux 命令 指令 搜索" href="linux/index.html"><span class="card-icon"><img src="assets/icons/linux-terminal.svg" alt=""></span><span class="card-index">11 / LINUX</span><h2>Linux 指令检索</h2><p>按用途和关键词搜索常用命令，查看示例、说明与操作影响。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="市场监管 题库 法规 搜索" href="market-search/index.html"><span class="card-icon">法</span><span class="card-index">12 / MARKET LAW</span><h2>市场监管题库与法规检索</h2><p>离线搜索题库及市场监管法规资料，支持模糊匹配和本地扩充。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="Windows 系统 配置 注册表 硬件 USB" href="windows/index.html"><span class="card-icon"><img src="assets/icons/windows.svg" alt=""></span><span class="card-index">13 / WINDOWS</span><h2>Windows 系统配置指南</h2><p>了解系统目录、硬件信息、注册表结构与常见历史痕迹。</p><span class="card-arrow">↗</span></a>
+      </div>
     </section>
     <footer class="home-footer">版权所有 Star Rain (GYY)</footer>
   </main>
+  <script defer src="assets/home-search.js?v=20261018-2"></script>
   <script defer src="assets/back-to-top.js?v=20261018-1"></script>
 </body>
 </html>

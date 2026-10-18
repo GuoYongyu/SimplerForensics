@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>文件元数据查看 · SimplerForensic</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261018-2"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensic<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>文件元数据查看</span></div>
+    <section class="page-heading"><div><p class="kicker">03 / METADATA INSPECTOR</p><h1>文件元数据查看</h1><p>查看常见图片、PDF 与 WAV 文件中可直接解析的描述字段和结构信息。</p></div><span class="chip">只读 · 本地解析</span></section>
+    <section class="panel">
+      <label class="field-label" for="file">选择文件</label>
+      <input class="file-input" id="file" type="file" accept=".jpg,.jpeg,.tif,.tiff,.png,.webp,.pdf,.wav,image/jpeg,image/tiff,image/png,image/webp,application/pdf,audio/wav,audio/x-wav">
+      <p class="hint">支持 JPEG、TIFF、PNG、WebP、PDF 和 RIFF/WAV；单文件上限 128 MiB。解析会在本地读取所选文件，字段数量与单字段显示长度均有限制。</p>
+      <div id="file-info" class="subtle"></div>
+      <div id="status" class="status" role="status" aria-live="polite">选择文件开始本地解析。原文件不会被修改或上传。</div>
+    </section>
+    <section id="results" hidden>
+      <section class="panel">
+        <div class="metadata-summary"><div><span class="subtle">识别格式</span><strong id="format"></strong></div><div><span class="subtle">字段数量</span><strong id="field-count"></strong></div></div>
+        <div class="table-wrap"><table class="metadata-table"><thead><tr><th>类别</th><th>字段</th><th>解析值</th><th>来源偏移 / 字段范围</th></tr></thead><tbody id="metadata-rows"></tbody></table></div>
+        <div id="empty-results" class="status warning" hidden>文件格式已识别，但在支持范围内没有找到可显示的元数据字段。</div>
+      </section>
+      <section id="warnings-panel" class="panel" hidden><h2>解析提示</h2><ul id="warnings" class="hint metadata-warnings"></ul></section>
+    </section>
+    <section class="panel"><h2>解析范围与解释</h2><ul class="hint metadata-warnings"><li>本工具读取文件中可见的字段，不执行嵌入对象、附件、脚本或外部资源。</li><li>PDF 压缩对象流、加密内容和复杂 XMP 结构未完整解码；PDF 结果只代表可直接读取到的文档信息字典或未压缩 XMP 文本。</li><li>EXIF 日期通常不包含时区；页面保留原始时间文本，不推断设备时区或拍摄时间。</li><li>图片中的位置、设备型号、作者等字段可能包含敏感信息；请在分享结果前检查内容。</li></ul></section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+</body>
+</html>
