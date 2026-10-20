@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#08111f">
+  <meta name="description" content="离线检索 Java、Python、C/C++、Go、Rust、Kubernetes、证书诊断等命令行指令。">
+  <title>代码指令检索 · SimplerForensic</title>
+  <link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../linux/style.css"><link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261020-1"></script><script defer src="data.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensic<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 完全离线检索</span></header>
+  <main class="page-shell linux-shell code-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>代码指令检索</span></div>
+    <section class="page-heading"><div><p class="kicker">12 / CODE CLI REFERENCE</p><h1>代码指令检索</h1><p>查语言运行、编译、构建、测试、依赖管理与排障命令。索引内置于本页，断网可用。</p></div><span class="chip" id="total-count">本地命令索引</span></section>
+    <section class="panel search-panel" aria-label="搜索代码指令">
+      <label class="field-label" for="query">搜索命令、语言或你要做的事</label><div class="search-row"><input class="field" id="query" type="search" autocomplete="off" placeholder="例如：Java 运行 jar、Python 虚拟环境、Go 测试、查看 K8s 证书到期"><button class="btn" id="clear-query" type="button">清空</button></div>
+      <p class="hint">可搜中文用途、命令名、参数和示例；可用空格组合关键词。点选分类或下面的热门检索词快速筛选。</p>
+      <div class="quick-searches" aria-label="热门检索词"><button type="button" data-query="运行 jar">Java JAR</button><button type="button" data-query="Python 虚拟环境">Python 环境</button><button type="button" data-query="C++ 编译">C / C++ 编译</button><button type="button" data-query="kubectl 证书 到期">K8s 证书</button><button type="button" data-query="依赖 安装">依赖管理</button><button type="button" data-query="调试 堆栈">调试诊断</button></div>
+      <div class="category-filter" id="categories" aria-label="语言和命令分类"></div>
+    </section>
+    <div class="results-toolbar"><p id="result-summary" aria-live="polite"></p><label class="inline-check"><input type="checkbox" id="show-changes"> 仅看会修改文件或运行状态的命令</label></div>
+    <section id="results" class="command-results" aria-live="polite"></section>
+    <section class="panel source-note"><h2>离线说明与使用边界</h2><p>本页没有外部脚本、CDN、在线搜索或自动更新请求。数据随页面静态加载；检索、分类筛选和复制都在浏览器本地完成。每条索引附有相应官方手册名称，页面不会自动访问这些站点。</p><p>命令按常见工具链整理，语法和选项会随操作系统、软件版本、发行版及集群配置变化。尖括号内容是需要替换的占位符；管道、路径和 shell 语法也可能因 PowerShell、CMD、bash、zsh 而异。集群操作前确认当前 context/namespace；证书排查避免输出或传播私钥与敏感转储。</p><p>带有“会改变”标记的命令会修改环境、文件或运行中的服务。执行前先读命令说明并核对目标。</p></section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main><script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body></html>
