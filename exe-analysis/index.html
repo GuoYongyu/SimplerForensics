@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>EXE 静态分析 · SimplerForensic</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261019-1"></script>
+  <script defer src="app.js?v=20261019-1"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensic<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 离线 · 本地分析</span></header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>EXE 静态分析</span></div>
+    <section class="page-heading"><div><p class="kicker">06 / EXECUTABLE ANALYSIS</p><h1>EXE 静态分析</h1><p>检查 PE 结构、计算哈希、推测编程语言，并在本地提取字符串和扫描内置规则。</p></div><span class="chip">不运行样本</span></section>
+    <section class="panel">
+      <div class="drop-zone" id="drop">
+        <strong>拖动 EXE / DLL 到这里，或选择本地文件</strong>
+        <span class="hint">支持 PE32 / PE32+；单文件上限 128 MiB。文件只在当前设备读取，不会上传或执行。</span>
+        <input class="file-input" id="file" type="file" accept=".exe,.dll,.sys,.ocx,.scr,.cpl,application/vnd.microsoft.portable-executable">
+      </div>
+      <div class="button-row"><button class="btn btn-danger" id="cancel" type="button" disabled>取消分析</button><button class="btn" id="clear" type="button">清空结果</button></div>
+      <div id="status" class="status" role="status" aria-live="polite">选择文件后开始本地静态分析。</div>
+      <div class="progress-wrap" id="progress-wrap" hidden><progress id="progress" max="100" value="0"></progress><span id="progress-label"></span></div>
+    </section>
+    <section id="results" hidden>
+      <section class="panel"><div class="result-heading"><div><p class="kicker">OVERVIEW</p><h2 id="file-name"></h2></div><button class="btn" id="export-json" type="button">导出 JSON 报告</button></div><div id="summary" class="analysis-summary"></div></section>
+      <details class="panel analysis-disclosure"><summary><span>文件哈希</span></summary><div class="disclosure-body"><p class="hint">MD5、SHA-1、SHA-256、SHA-384 和 SHA-512 为文件字节摘要；PE 专用哈希与模糊哈希未包含在此版本。</p><div id="hashes" class="hash-list"></div></div></details>
+      <details class="panel analysis-disclosure"><summary><span>编程语言与工具链推测</span></summary><div class="disclosure-body"><div id="language" class="result-box"></div></div></details>
+      <details class="panel analysis-disclosure"><summary><span>PE 文件结构</span></summary><div class="disclosure-body"><div id="pe-summary" class="analysis-summary"></div><h3>节区</h3><div class="table-wrap"><table><thead><tr><th>名称</th><th>RVA</th><th>文件偏移</th><th>虚拟 / 原始大小</th><th>权限</th><th>熵</th></tr></thead><tbody id="sections"></tbody></table></div><div id="pe-warnings"></div></div></details>
+      <details class="panel analysis-disclosure"><summary><span>导入函数</span></summary><div class="disclosure-body"><p class="hint">导入表展示文件声明的外部函数引用，不代表程序运行时一定调用这些函数。</p><input class="field" id="import-filter" type="search" placeholder="筛选 DLL 或函数名" aria-label="筛选导入函数"><div class="table-wrap"><table><thead><tr><th>DLL</th><th>函数</th></tr></thead><tbody id="imports"></tbody></table></div><p id="import-count" class="hint"></p></div></details>
+      <details class="panel analysis-disclosure"><summary><span>字符串与线索</span></summary><div class="disclosure-body"><p class="hint">提取可见 ASCII 和 UTF-16LE 字符串；匹配项只表示文件中存在相关文本，不证明对应行为发生。</p><input class="field" id="string-filter" type="search" placeholder="搜索字符串、URL、路径或 API" aria-label="搜索提取的字符串"><p id="string-count" class="hint"></p><div class="table-wrap analysis-string-wrap"><table><thead><tr><th>偏移</th><th>编码</th><th>字符串</th></tr></thead><tbody id="strings"></tbody></table></div><div id="string-limit" class="status warning" hidden></div><details class="evidence-detail ioc-detail"><summary>IOC 线索（不自动访问）</summary><p class="hint">这些是从静态字符串中提取的 URL、IP、命令或注册表路径；不会自动打开、解析或连接目标。</p><div id="iocs" class="ioc-list"></div></details></div></details>
+      <details class="panel analysis-disclosure"><summary><span>本地规则扫描</span></summary><div class="disclosure-body"><p class="hint">运行内置静态特征规则，也可加载本地 JSON 文本规则；文件不会上传。此版本不是完整 YARA 引擎。规则命中是待复核线索，未命中不代表文件安全。</p><label class="field-label" for="rules-file">可选：加载本地规则 JSON</label><input class="file-input" id="rules-file" type="file" accept=".json,application/json"><p class="hint" id="rules-file-status">规则文件须包含 rules 数组；<a href="rules-example.json" download>下载本地规则模板</a>。</p><div id="rules"></div></div></details>
+      <details class="panel analysis-disclosure"><summary><span>导出与数据边界</span></summary><div class="disclosure-body"><p class="hint">报告保存在用户明确下载的位置。分析过程中不会执行 EXE，不会写入或修改样本，也不会访问网络。</p></div></details>
+    </section>
+    <section class="panel"><h2>分析范围与限制</h2><ul class="hint analysis-notes"><li>PE 时间戳和版本资源可能被构建流程或文件作者修改，不能单独证明真实编译时间或来源。</li><li>语言识别依据元数据、运行时、节区、导入和可见字符串等线索；混合语言、裁剪、加壳或混淆可能导致误报、漏报或无法判断。</li><li>字符串和规则扫描仅覆盖静态可见内容；运行时解密、网络下载内容和实际系统行为不在本工具范围内。</li><li>损坏或特意构造的文件可能无法完整解析；解析结果会受字段范围、节区数量和字符串数量上限约束。</li></ul></section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body>
+</html>

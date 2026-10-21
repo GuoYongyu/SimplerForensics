@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "LOCAL-001",
+      "title": "发现 PowerShell 编码参数",
+      "severity": "warning",
+      "condition": "any",
+      "caseSensitive": false,
+      "strings": [
+        "-EncodedCommand",
+        "-enc "
+      ]
+    },
+    {
+      "id": "LOCAL-002",
+      "title": "出现多个路径相关线索",
+      "severity": "info",
+      "condition": "all",
+      "caseSensitive": false,
+      "strings": [
+        "AppData",
+        "Startup"
+      ]
+    }
+  ]
+}
