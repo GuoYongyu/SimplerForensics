@@ -1,12 +1,12 @@
-# SimplerForensic
+# SimplerForensics
 
-SimplerForensic 是一组可离线使用的本地工具，基于原生 HTML、CSS 和 JavaScript 编写，无需安装项目依赖。大多数工具直接在浏览器中运行；需要 APK 分析时，页面会调用本机的 JADX。
+SimplerForensics 是一组可离线使用的本地工具，基于原生 HTML、CSS 和 JavaScript 编写，无需安装项目依赖。大多数工具直接在浏览器中运行；需要 APK 分析时，页面会调用本机的 JADX。
 
 ## 工具一览
 
 | 工具 | 用途 |
 | --- | --- |
-| MD5 | 使用用户选择的字典文件进行本地匹配 |
+| 密文字典匹配 | 使用本地字典匹配 MD5、SHA 系列、bcrypt、PBKDF2-SHA256 等候选值 |
 | 文件签名 | 查询常见文件格式签名，也可保存自定义记录 |
 | 十六进制查看器 | 分页查看文件字节、全文件分块搜索并导出选定范围 |
 | 文件元数据查看 | 只读解析 JPEG、TIFF、PNG、WebP、PDF 与 WAV 的可读字段 |
@@ -21,7 +21,6 @@ SimplerForensic 是一组可离线使用的本地工具，基于原生 HTML、CS
 | Linux 指令检索 | 按命令、中文关键词、近似拼写、路径和示例查找命令 |
 | 代码指令检索 | 按语言与用途查找编译、运行、构建、测试、容器、Kubernetes 和 TLS 证书命令 |
 | Windows 工具 | 使用离线整理的 Windows 相关工具和资料 |
-| 市场监管题库与法规检索 | 搜索题库和法规全文，或导入自己的资料 |
 | 时间戳、Base64 等 | 处理常见编码与时间戳转换 |
 
 ## 启动
@@ -35,9 +34,9 @@ SimplerForensic 是一组可离线使用的本地工具，基于原生 HTML、CS
 
 ## 各工具说明
 
-### MD5 字典匹配
+### 密文字典匹配
 
-在页面中选择 md5/dicts 文件夹，或手动选择 TXT 字典文件。浏览器因本地文件安全限制，不会在未选择的情况下读取相邻文件。若希望按从易到难的顺序尝试字典，可在文件名前添加 00-、10- 等编号。
+在页面中选择 ciphertext/dicts 文件夹，或手动选择 TXT 字典文件。支持自动检测和指定 MD5、SHA-1、SHA-256、SHA-384、SHA-512、bcrypt 及 Django 格式 PBKDF2-SHA256。浏览器因本地文件安全限制，不会在未选择的情况下读取相邻文件。若希望按从易到难的顺序尝试字典，可在文件名前添加 00-、10- 等编号。bcrypt.js 浏览器实现及许可证见 ciphertext/BCRYPT-LICENSE.txt。
 
 ### 文件与图片分析
 
@@ -88,22 +87,16 @@ CA 证书分析位于 `ca-certificate/`，可粘贴单张或多张 PEM `CERTIFIC
 
 命令按用途分类，支持按命令名、中文关键词、近似拼写、配置路径和示例搜索，也可复制示例。离线数据位于 linux/data.js、linux/supplement.js 和 linux/paths.js。命令条目优先链接菜鸟教程；没有对应页面时链接官方文档或手册页。页面也介绍 Linux 关键目录与配置文件的用途和维护方式。菜鸟教程中的低频命令经过筛选；《Tutorial.md》中的命令和示例均已纳入索引。
 
-### 市场监管题库与法规检索
-
-相关页面位于 market-search/，可离线检索题库和法规全文。题库原始工作簿（如有）保存在 market-search/data/题库.xlsx；questions.json 是可编辑数据源，页面读取的 questions.js 可通过以下命令重建：
-
-    python3 market-search/build-index.py
-
-题目记录必须包含 question、type 和 answer，也可包含 id、options。法规 PDF 原文位于 market-search/data/laws/；全文索引为 market-search/data/laws-full.json 和页面读取的 market-search/data/laws-full.js。联网更新法规语料运行 python3 market-search/download-corpus.py；只重建浏览器索引运行 python3 market-search/build-law-index.py。当前语料包含国家市场监督管理总局数据库的 594 条记录，以及国家知识产权局的 1 条后续规章补充记录。
-
-页面支持将 TXT、Markdown、CSV 或 JSON 导入当前浏览器的本地存储，并可导出为 JSON。导入的数据仅在当前浏览器可见，不会自动写入项目文件。正式使用法规内容前，请核实官方数据库中的现行文本和适用范围。
-
 ## 隐私与联网
 
 网页服务只绑定 127.0.0.1，不会向局域网或互联网开放。APK 文件和 JADX 生成的临时文件均在本机处理，不会上传到远程服务。除首次准备 JADX 便携运行包时从官方发行页和 Adoptium 下载文件外，其他页面不加载远程脚本、字体或 API。
 
 ## 开源致谢
 
-感谢 [JADX 项目](https://github.com/skylot/jadx)提供优秀的 Android APK 反编译工具。本项目通过 JADX 进行本机 APK 静态分析；JADX 使用 Apache-2.0 许可证，使用及再分发时请遵守其许可证要求。
+感谢 [JADX 项目](https://github.com/skylot/jadx)的维护者和贡献者提供优秀的 Android APK 反编译工具。本项目通过 JADX 进行本机 APK 静态分析；JADX 使用 Apache-2.0 许可证。便携运行包使用 [Adoptium Temurin](https://adoptium.net/) 提供的 Java 运行时，感谢 Adoptium 社区的维护和发布。
 
-二维码识别使用 [jsQR](https://github.com/cozmo/jsQR)，同样采用 Apache-2.0 许可证。其许可证文本随项目保存在 assets/vendor/jsQR-LICENSE.txt。
+二维码识别使用 [jsQR](https://github.com/cozmo/jsQR)，感谢其维护者和贡献者；项目采用 Apache-2.0 许可证，文本见 assets/vendor/jsQR-LICENSE.txt。
+
+密文字典匹配使用 [bcrypt.js 2.4.3](https://github.com/dcodeIO/bcrypt.js) 验证 bcrypt 候选值，感谢 Daniel Wirtz 及贡献者；bcrypt.js 采用 BSD-3-Clause 许可证。其内嵌的 ISAAC 随机数实现感谢 Yves-Marie K. Rinquin，采用 MIT 许可证。相关许可文本见 ciphertext/BCRYPT-LICENSE.txt。
+
+手机号归属地查询使用 [jieeit/phone](https://github.com/jieeit/phone) 发布的离线号段数据，感谢 Jieeit 整理并分享数据；数据采用 MIT 许可证，文本见 phone-lookup/data/LICENSE-MIT.txt。Linux 指令索引筛选并链接了[菜鸟教程](https://www.runoob.com/)的内容，感谢菜鸟教程提供学习资料。

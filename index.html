@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08111f">
-  <title>SimplerForensic · 本地工具集</title>
+  <title>SimplerForensics · 本地工具集</title>
   <link rel="stylesheet" href="assets/style.css"><link rel="icon" type="image/x-icon" href="assets/favicon.ico">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <header class="topbar">
-    <a class="brand" href="index.html"><img class="brand-logo" src="assets/icons/brand.svg" alt=""><span>SimplerForensic<small>LOCAL TOOLKIT</small></span></a>
+    <a class="brand" href="index.html"><img class="brand-logo" src="assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a>
     <span class="local-badge"><i></i> 仅在本地运行</span>
   </header>
   <main class="home-shell">
@@ -22,7 +22,7 @@
     <section class="tool-search panel" aria-label="查找工具">
       <label class="field-label" for="tool-search-input">快速查找工具</label>
       <input class="field" id="tool-search-input" type="search" placeholder="搜索名称或用途，例如：文件头、十六进制、APK">
-      <p class="hint">除工具名称外，还会检索功能页说明、Linux 命令索引和市场监管题库/法规全文。首次建立索引会在本机读取约 13 MB 法规全文，不会上传。</p>
+      <p class="hint">除工具名称外，还会检索功能页说明和 Linux 命令索引；索引仅在本机建立，不会上传。</p>
       <p class="hint" id="tool-search-status" role="status" aria-live="polite">按用途浏览，或输入关键词筛选。</p>
       <div id="tool-search-results" class="tool-search-results" aria-live="polite" hidden></div>
     </section>
@@ -52,7 +52,7 @@
         <a class="tool-card" data-search="手机号 手机 电话 归属地 省市 运营商 通讯录 批量导入 VCF CSV XLS XLSX JSON XML SQLite DB LDIF 去重" href="phone-lookup/index.html"><span class="card-icon"><img src="assets/icons/phone-lookup.svg" alt=""></span><span class="card-index">08 / PHONE LOOKUP</span><h2>手机号归属地查询</h2><p>单号查询或导入通讯录、表格和数据库文件，离线识别号码、去重并统计省市与运营商。</p><span class="card-arrow">↗</span></a>
         <a class="tool-card" data-search="Base64 编码 解码 URL-safe" href="base64/index.html"><span class="card-icon"><img src="assets/icons/base64.svg?v=20261022-1" alt=""></span><span class="card-index">08 / ENCODE</span><h2>Base64 编解码</h2><p>按行批量转换文本，支持标准及 URL-safe 格式。</p><span class="card-arrow">↗</span></a>
         <a class="tool-card" data-search="时间戳 日期 时间 时区转换" href="timestamp/index.html"><span class="card-icon"><img src="assets/icons/timestamp.svg" alt=""></span><span class="card-index">09 / TIME</span><h2>时间戳转换</h2><p>秒、毫秒与日期时间互转，支持时区选择和批量输入。</p><span class="card-arrow">↗</span></a>
-        <a class="tool-card" data-search="MD5 字典 匹配 哈希 候选" href="md5/index.html"><span class="card-icon"><img src="assets/icons/md5.svg" alt=""></span><span class="card-index">10 / MD5</span><h2>MD5 字典匹配</h2><p>使用本地字典查找 MD5 候选值，最多 8 个并行线程。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="密文 字典 匹配 哈希 MD5 SHA-1 SHA-256 SHA-384 SHA-512 候选" href="ciphertext/index.html"><span class="card-icon"><img src="assets/icons/md5.svg" alt=""></span><span class="card-index">10 / HASH</span><h2>密文字典匹配</h2><p>使用本地字典查找 MD5、SHA-1、SHA-256、SHA-384、SHA-512、bcrypt、PBKDF2-SHA256 候选值，最多 8 个并行线程。</p><span class="card-arrow">↗</span></a>
       </div>
     </section>
     <section class="tool-category" aria-labelledby="category-reference-title">
@@ -60,7 +60,7 @@
       <div class="tool-grid" aria-label="系统与资料检索工具">
         <a class="tool-card" data-search="Linux 命令 指令 搜索" href="linux/index.html"><span class="card-icon"><img src="assets/icons/linux-terminal.svg" alt=""></span><span class="card-index">11 / LINUX</span><h2>Linux 指令检索</h2><p>按用途和关键词搜索常用命令，查看示例、说明与操作影响。</p><span class="card-arrow">↗</span></a>
         <a class="tool-card" data-search="Java Python C C++ Go Rust Kubernetes kubectl 编译 运行 命令行 指令 检索" href="code-commands/index.html"><span class="card-icon">&lt;/&gt;</span><span class="card-index">12 / CODE CLI</span><h2>代码指令检索</h2><p>查找多种语言的编译、运行、构建、测试与包管理命令，以及 Kubernetes 和证书排查示例。</p><span class="card-arrow">↗</span></a>
-        <a class="tool-card" data-search="市场监管 题库 法规 搜索" href="market-search/index.html"><span class="card-icon">法</span><span class="card-index">13 / MARKET LAW</span><h2>市场监管题库与法规检索</h2><p>离线搜索题库及市场监管法规资料，支持模糊匹配和本地扩充。</p><span class="card-arrow">↗</span></a>
+
         <a class="tool-card" data-search="Windows 系统 配置 注册表 硬件 USB" href="windows/index.html"><span class="card-icon"><img src="assets/icons/windows.svg" alt=""></span><span class="card-index">14 / WINDOWS</span><h2>Windows 系统配置指南</h2><p>了解系统目录、硬件信息、注册表结构与常见历史痕迹。</p><span class="card-arrow">↗</span></a>
       </div>
     </section>

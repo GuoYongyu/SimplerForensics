@@ -11,11 +11,6 @@
       { path: 'linux/data.js' },
       { path: 'linux/supplement.js' },
       { path: 'linux/paths.js' }
-    ],
-    'market-search/index.html': [
-      { path: 'market-search/data/questions.js' },
-      { path: 'market-search/data/laws.js' },
-      { path: 'market-search/data/laws-full.js' }
     ]
   };
   let indexPromise = null;
