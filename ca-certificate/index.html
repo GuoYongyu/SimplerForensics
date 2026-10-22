@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>CA 证书分析 · SimplerForensic</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261022-1"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensic<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>CA 证书分析</span></div>
+    <section class="page-heading"><div><p class="kicker">07 / X.509 CERTIFICATE</p><h1>CA 证书分析</h1><p>粘贴 PEM 证书或 Base64 编码的 DER 证书，在本机查看 X.509 字段和扩展。</p></div><span class="chip">离线 · PEM · Base64</span></section>
+    <section class="panel">
+      <label class="field-label" for="certificate-input">证书内容</label>
+      <textarea id="certificate-input" class="ca-input" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="-----BEGIN CERTIFICATE-----&#10;粘贴 PEM 证书内容，或直接粘贴 Base64 编码的 DER 证书&#10;-----END CERTIFICATE-----"></textarea>
+      <p class="hint">支持单张或多张 PEM 证书，以及单张 Base64 DER 证书；输入上限 5 MiB、最多 20 张证书。解析仅在此浏览器内进行；不会联网查询证书状态、建立信任链或验证签名。</p>
+      <div class="button-row"><button type="button" class="btn btn-primary" id="parse">解析证书</button><button type="button" class="btn" id="clear">清空</button></div>
+      <div id="status" class="status" role="status" aria-live="polite">等待证书内容。</div>
+    </section>
+    <section id="certificate-results" hidden>
+      <div id="certificate-tabs" class="ca-tabs" role="tablist" aria-label="证书列表"></div>
+      <div id="certificate-detail"></div>
+    </section>
+    <section class="panel ca-boundary">
+      <h2>解析范围与判断边界</h2>
+      <ul>
+        <li>“CA”标签依据 X.509 Basic Constraints 的 CA 字段；Key Usage 会单独展示证书签发用途提示。</li>
+        <li>有效期状态只按本机当前时间与证书起止时间比较，不代表证书链可信或未被吊销。</li>
+        <li>本工具读取证书内可识别的标准字段；未知扩展保留 OID、临界标记和原始字节，不会猜测其含义。</li>
+        <li>DER 结构截断、格式错误或 Base64 无效时会报告解析失败；不支持 PKCS#7、PKCS#12 容器及私钥。</li>
+      </ul>
+    </section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body>
+</html>

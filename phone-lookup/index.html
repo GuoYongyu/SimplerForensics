@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>手机号归属地查询 · SimplerForensic</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261021-1"></script>
+  <script defer src="data/phone-data.js?v=202605"></script>
+  <script defer src="app.js?v=20261021-1"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensic<small>LOCAL TOOLKIT</small></span></a>
+    <span class="local-badge"><i></i> 仅在本地运行</span>
+  </header>
+  <main class="page-shell phone-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>手机号归属地查询</span></div>
+    <section class="page-heading"><div><p class="kicker">03 / PHONE LOOKUP</p><h1>手机号归属地查询</h1><p>单号即时查询，或从本地文件提取号码；去重后查看省市、运营商分布。</p></div><span class="chip">完全离线 · 不上传号码</span></section>
+
+    <section class="panel phone-search-panel" aria-labelledby="single-title">
+      <div class="phone-section-head"><div><p class="kicker">QUICK LOOKUP</p><h2 id="single-title">单号码查询</h2></div><span class="subtle">支持 11 位大陆手机号或前 7 位号段</span></div>
+      <div class="phone-single-row">
+        <label class="phone-input-wrap" for="single-phone"><span class="field-label">手机号码</span><input class="field" id="single-phone" type="tel" inputmode="numeric" autocomplete="off" maxlength="24" placeholder="例如 13800138000"></label>
+        <button class="btn btn-primary phone-search-btn" id="lookup-one" type="button">查询归属地 <span aria-hidden="true">↗</span></button>
+      </div>
+      <div class="phone-single-result" id="single-result" aria-live="polite"><div class="phone-empty-mark">⌕</div><div><strong>输入号码开始查询</strong><span>使用本机内置号段数据库匹配，不会连接网络。</span></div></div>
+    </section>
+
+    <section class="panel" aria-labelledby="batch-title">
+      <div class="phone-section-head"><div><p class="kicker">BATCH ANALYSIS</p><h2 id="batch-title">批量导入与统计</h2></div><span class="chip" id="db-badge">号段数据加载中…</span></div>
+      <div class="phone-import-grid">
+        <div>
+          <div id="drop-zone" class="drop-zone phone-drop" tabindex="0" role="button" aria-label="拖放文件到这里，或选择本地文件">
+            <div class="upload-symbol" aria-hidden="true">↑</div>
+            <strong>拖放文件到此处，或选择本地文件</strong>
+            <span>支持多文件同时导入，页面在本机自动识别号码内容</span>
+            <input class="file-input" id="file-input" type="file" multiple accept=".txt,.csv,.tsv,.vcf,.vcard,.ldif,.json,.jsonl,.ndjson,.xml,.html,.htm,.mhtml,.eml,.mbox,.sql,.log,.md,.yaml,.yml,.ini,.conf,.properties,.xlsx,.xlsm,.xltx,.xls,.ods,.ots,.db,.sqlite,.sqlite3,.db3,.s3db,.mdb,.accdb,.dbf,.docx,.odt,.rtf,.pdf,.zip,.epub,.vcf,.ics">
+          </div>
+          <p class="hint phone-format-hint">联系人：VCF / vCard、LDIF、EML、MBOX、ICS；表格：CSV、TSV、XLSX、XLS、ODS；数据：JSON / JSONL、XML、HTML、SQL、TXT、日志、YAML；数据库：SQLite、DBF、Access 等可读文本；以及 DOCX、ODT、ZIP / EPUB 内可读文本。格式按文件内容识别，扩展名不匹配时也会尝试解析。</p>
+        </div>
+        <div>
+          <label class="field-label" for="paste-numbers">粘贴号码或文本</label>
+          <textarea id="paste-numbers" class="phone-paste" placeholder="每行一个号码，也可以粘贴包含号码的联系人文本……&#10;例如：138 0013 8000"></textarea>
+          <div class="button-row"><button class="btn btn-primary" id="analyze-paste" type="button">识别并统计</button><button class="btn" id="sample-data" type="button">填入示例</button><button class="btn" id="clear-all" type="button">清空结果</button></div>
+        </div>
+      </div>
+      <div class="status" id="batch-status" role="status" aria-live="polite" hidden></div>
+      <div class="phone-progress" id="progress-wrap" hidden><span id="progress-label">正在识别文件…</span><progress id="progress" max="100" value="0">0%</progress></div>
+    </section>
+
+    <section class="phone-results" id="results" hidden>
+      <div class="phone-metrics" id="metrics"></div>
+      <div class="panel phone-stats-panel">
+        <div class="phone-section-head"><div><p class="kicker">DISTRIBUTION</p><h2>号码分布</h2></div><span class="subtle" id="stats-caption"></span></div>
+        <div class="phone-distributions" id="distributions"></div>
+      </div>
+      <div class="panel phone-table-panel">
+        <div class="phone-section-head phone-table-head"><div><p class="kicker">MATCHED NUMBERS</p><h2>号码明细 <span id="table-count" class="count-pill"></span></h2></div><div class="phone-table-actions"><label class="sr-only" for="filter-results">筛选号码明细</label><input class="field" id="filter-results" type="search" placeholder="筛选号码、省市或运营商"><button class="btn" id="export-results" type="button">导出 CSV</button><button class="btn icon-button details-toggle" id="toggle-details" type="button" aria-label="展开号码明细" aria-expanded="false" aria-controls="table-content"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div></div>
+        <div id="table-content" hidden><div class="table-wrap"><table class="phone-table"><thead><tr><th>号码</th><th>省份</th><th>城市</th><th>运营商</th><th>备注</th></tr></thead><tbody id="result-rows"></tbody></table></div>
+        <div class="phone-table-foot"><span id="table-summary"></span><button class="btn icon-button rows-toggle" id="toggle-rows" type="button" hidden aria-label="显示全部号码"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div></div>
+      </div>
+    </section>
+
+    <details class="panel phone-notes"><summary>数据来源、范围与识别说明</summary><div class="phone-notes-body">
+      <p>归属地库为项目随附的本地数据库，采用 jieeit/phone 开源项目发布的数据（MIT），共约 52 万条号段记录，数据截至 2026 年 5 月；许可证文本见 phone-lookup/data/LICENSE-MIT.txt。号码只在当前浏览器内存中处理；导入文件不会保存，导出仅在点击“导出 CSV”后生成。</p>
+      <p>归属地代表号段登记地，不是号码持有人当前位置；携号转网后当前实际运营商可能与号段数据不同。未命中号码会标记为“暂无号段记录”。</p>
+      <p>支持格式按已发现的文件容器和文本内容解析。普通文本、联系人、表格及 Office Open XML 文档会尽可能结构化读取；SQLite / Access / PDF / 压缩档等格式采用可读文本扫描，压缩字段、二进制页或加密内容无法保证提取完整。超大或不完整文件可能显示部分结果。</p>
+    </div></details>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body>
+</html>

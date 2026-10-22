@@ -84,7 +84,7 @@ window.CODE_COMMANDS = [
     "examples": [
       "jstack -l 1234 > threads.txt"
     ],
-    "keywords": "线程 dump 死锁 堆栈",
+    "keywords": "线程 dump 死锁 堆栈 调试 诊断",
     "source": "Java SE / JDK 工具",
     "risk": false
   },
@@ -1474,7 +1474,7 @@ window.CODE_COMMANDS = [
     "examples": [
       "kubectl get secret ingress-tls -n prod -o go-template='{{index .data \"tls.crt\"}}' | base64 -d | openssl x509 -noout -dates -subject"
     ],
-    "keywords": "Kubernetes secret tls.crt 证书有效期 base64",
+    "keywords": "Kubernetes secret tls.crt 证书有效期 base64 kubectl 到期 K8s 证书排查",
     "source": "Kubernetes TLS / OpenSSL 手册",
     "risk": false
   }

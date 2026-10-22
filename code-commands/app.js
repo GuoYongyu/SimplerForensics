@@ -6,6 +6,7 @@
   const summary = document.querySelector('#result-summary');
   const changesOnly = document.querySelector('#show-changes');
   const pageSize = 36;
+  const quickSearchButtons = [...document.querySelectorAll('[data-query]')];
   let activeCategory = '全部';
   let visibleCount = pageSize;
   const categoryNames = [...new Set(entries.map((item) => item.category))];
@@ -16,6 +17,12 @@
   }
   function normalize(value) {
     return String(value).toLocaleLowerCase().replace(/[\s\-_/]+/g, ' ').trim();
+  }
+  function syncQuickSearchState() {
+    const currentQuery = normalize(query.value);
+    quickSearchButtons.forEach((button) => {
+      button.setAttribute('aria-pressed', String(currentQuery === normalize(button.dataset.query)));
+    });
   }
   function renderCategories() {
     const all = ['全部', ...categoryNames];
@@ -75,13 +82,13 @@
     if (!button) return;
     activeCategory = button.dataset.category; visibleCount = pageSize; renderCategories(); render();
   });
-  query.addEventListener('input', () => { visibleCount = pageSize; render(); });
+  query.addEventListener('input', () => { visibleCount = pageSize; syncQuickSearchState(); render(); });
   changesOnly.addEventListener('change', () => { visibleCount = pageSize; render(); });
-  document.querySelector('#clear-query').addEventListener('click', () => { query.value = ''; query.focus(); visibleCount = pageSize; render(); });
-  document.querySelectorAll('[data-query]').forEach((button) => button.addEventListener('click', () => { query.value = button.dataset.query; visibleCount = pageSize; render(); query.focus(); }));
+  document.querySelector('#clear-query').addEventListener('click', () => { query.value = ''; query.focus(); visibleCount = pageSize; syncQuickSearchState(); render(); });
+  quickSearchButtons.forEach((button) => button.addEventListener('click', () => { query.value = button.dataset.query; visibleCount = pageSize; syncQuickSearchState(); render(); query.focus(); }));
   document.addEventListener('keydown', (event) => {
     if (event.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) { event.preventDefault(); query.focus(); }
-    if (event.key === 'Escape' && document.activeElement === query) { query.value = ''; visibleCount = pageSize; render(); }
+    if (event.key === 'Escape' && document.activeElement === query) { query.value = ''; visibleCount = pageSize; syncQuickSearchState(); render(); }
   });
   render();
 })();

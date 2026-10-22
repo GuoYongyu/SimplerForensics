@@ -13,9 +13,11 @@ SimplerForensic 是一组可离线使用的本地工具，基于原生 HTML、CS
 | 图片尺寸 | 修改 JPEG、PNG、WebP 的尺寸元数据并下载副本 |
 | 文件伪装分析 | 对照扩展名和文件头，扫描内部签名及容器边界线索 |
 | EXE 静态分析 | 本地计算多种哈希、解析 PE 结构、推测语言/工具链、提取字符串并扫描内置规则 |
+| CA 证书分析 | 离线解析 PEM 或 Base64 X.509 证书的名称、有效期、公钥、指纹和扩展 |
 | 隐写初筛 | 统计 PNG 像素和 PCM WAV 样本的低位分布 |
 | APK 分析 | 查看 Manifest、权限、入口、代码特征和静态网址 |
 | 二维码识别 | 在浏览器中识别图片里的二维码 |
+| 手机号归属地 | 离线查询大陆手机号码号段，批量导入联系人/表格/文本并统计、去重 |
 | Linux 指令检索 | 按命令、中文关键词、近似拼写、路径和示例查找命令 |
 | 代码指令检索 | 按语言与用途查找编译、运行、构建、测试、容器、Kubernetes 和 TLS 证书命令 |
 | Windows 工具 | 使用离线整理的 Windows 相关工具和资料 |
@@ -71,6 +73,16 @@ APK 分析页面调用本机 JADX。成功读取 APK 的 Manifest 后，页面�
 ### 二维码识别
 
 二维码识别使用本地打包的 [jsQR 1.4.0](https://github.com/cozmo/jsQR) 解码图片。识别结果只显示在当前浏览器中；许可证文本见 assets/vendor/jsQR-LICENSE.txt。
+
+### CA 证书分析
+
+CA 证书分析位于 `ca-certificate/`，可粘贴单张或多张 PEM `CERTIFICATE` 块，也可粘贴单张 Base64 DER 证书。页面在浏览器本机解析 X.509 主题、颁发者、序列号、有效期、公钥算法、SHA-256 指纹及常见扩展。CA 标签依据 Basic Constraints；证书签名用途依据 Key Usage 单独显示。
+
+有效期仅与本机时间比较。工具不验证证书签名、信任链、主机名或吊销状态，也不联网获取 OCSP/CRL；未知扩展会显示 OID 和原始值，不会推断其语义。支持 DER 编码 X.509 证书，不支持 PKCS#7、PKCS#12 或私钥。
+
+### 手机号归属地查询
+
+页面位于 phone-lookup/，附带 [jieeit/phone](https://github.com/jieeit/phone) 发布的截至 2026 年 5 月离线号段数据库（约 52 万条），按号码前 7 位查询省市及运营商；支持文本、VCF/vCard、LDIF、CSV/TSV、XLSX、XLS、ODS、JSON/JSONL、XML、HTML、SQL、日志、SQLite/Access 等多种格式的本地号码提取、去重、统计和 CSV 导出。Office Open XML ZIP 文档可结构化读取；其他二进制数据库按可读文本尽力扫描，不保证提取压缩、加密或二进制字段。归属地表示号段登记地，不是持有人实时位置，携号转网也可能导致当前运营商与号段记录不一致。数据源及 MIT 许可证随 phone-lookup/data/ 一同提供。
 
 ### Linux 指令检索
 

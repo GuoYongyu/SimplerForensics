@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#08111f">
   <meta name="description" content="离线检索 Java、Python、C/C++、Go、Rust、Kubernetes、证书诊断等命令行指令。">
   <title>代码指令检索 · SimplerForensic</title>
-  <link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../linux/style.css"><link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <link rel="stylesheet" href="../assets/style.css"><link rel="stylesheet" href="../linux/style.css"><link rel="stylesheet" href="style.css"><link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
   <script defer src="../assets/nav.js?v=20261020-1"></script><script defer src="data.js"></script><script defer src="app.js"></script>
 </head>
 <body>
@@ -15,7 +15,7 @@
     <section class="panel search-panel" aria-label="搜索代码指令">
       <label class="field-label" for="query">搜索命令、语言或你要做的事</label><div class="search-row"><input class="field" id="query" type="search" autocomplete="off" placeholder="例如：Java 运行 jar、Python 虚拟环境、Go 测试、查看 K8s 证书到期"><button class="btn" id="clear-query" type="button">清空</button></div>
       <p class="hint">可搜中文用途、命令名、参数和示例；可用空格组合关键词。点选分类或下面的热门检索词快速筛选。</p>
-      <div class="quick-searches" aria-label="热门检索词"><button type="button" data-query="运行 jar">Java JAR</button><button type="button" data-query="Python 虚拟环境">Python 环境</button><button type="button" data-query="C++ 编译">C / C++ 编译</button><button type="button" data-query="kubectl 证书 到期">K8s 证书</button><button type="button" data-query="依赖 安装">依赖管理</button><button type="button" data-query="调试 堆栈">调试诊断</button></div>
+      <div class="quick-searches" aria-label="热门检索词"><button type="button" data-query="运行 jar" aria-pressed="false">Java JAR</button><button type="button" data-query="Python 虚拟环境" aria-pressed="false">Python 环境</button><button type="button" data-query="C++ 编译" aria-pressed="false">C / C++ 编译</button><button type="button" data-query="kubectl 证书 到期" aria-pressed="false">K8s 证书</button><button type="button" data-query="依赖 安装" aria-pressed="false">依赖管理</button><button type="button" data-query="调试 堆栈" aria-pressed="false">调试诊断</button></div>
       <div class="category-filter" id="categories" aria-label="语言和命令分类"></div>
     </section>
     <div class="results-toolbar"><p id="result-summary" aria-live="polite"></p><label class="inline-check"><input type="checkbox" id="show-changes"> 仅看会修改文件或运行状态的命令</label></div>

@@ -30,12 +30,13 @@
       <div class="tool-category-heading"><div><p class="kicker">01 / FILE ANALYSIS</p><h2 id="category-file-title">文件分析</h2></div><p>查看文件结构、格式线索、元数据和字节内容。</p></div>
       <div class="tool-grid" aria-label="文件分析工具">
         <a class="tool-card" data-search="文件格式 签名 文件头 文件尾 二进制" href="signatures/index.html"><span class="card-icon"><img src="assets/icons/signature.svg" alt=""></span><span class="card-index">01 / SIGNATURE</span><h2>文件格式速查</h2><p>搜索常见格式的文件头、文件尾签名和已知字段。</p><span class="card-arrow">↗</span></a>
-        <a class="tool-card" data-search="十六进制 hex 字节 偏移 查看器 搜索" href="hex-viewer/index.html"><span class="card-icon">HEX</span><span class="card-index">02 / HEX VIEWER</span><h2>十六进制查看器</h2><p>按偏移查看原始字节，搜索字节序列并导出选定范围。</p><span class="card-arrow">↗</span></a>
-        <a class="tool-card" data-search="元数据 EXIF 图片 PDF WAV PNG WebP TIFF" href="metadata-viewer/index.html"><span class="card-icon">META</span><span class="card-index">03 / METADATA</span><h2>文件元数据查看</h2><p>提取常见文件中的可读元数据，并显示字段来源与解析限制。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="十六进制 hex 字节 偏移 查看器 搜索" href="hex-viewer/index.html"><span class="card-icon"><img src="assets/icons/hex-viewer.svg" alt=""></span><span class="card-index">02 / HEX VIEWER</span><h2>十六进制查看器</h2><p>按偏移查看原始字节，搜索字节序列并导出选定范围。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="元数据 EXIF 图片 PDF WAV PNG WebP TIFF" href="metadata-viewer/index.html"><span class="card-icon"><img src="assets/icons/metadata-viewer.svg" alt=""></span><span class="card-index">03 / METADATA</span><h2>文件元数据查看</h2><p>提取常见文件中的可读元数据，并显示字段来源与解析限制。</p><span class="card-arrow">↗</span></a>
         <a class="tool-card" data-search="文件 伪装 扩展名 内部签名 拼接 隐写 PNG WAV" href="file-disguise/index.html"><span class="card-icon"><img src="assets/icons/file-disguise.svg" alt=""></span><span class="card-index">04 / FILE TRIAGE</span><h2>文件伪装分析</h2><p>比对扩展名与文件头，查找内部签名、结构异常及有限的隐写线索。</p><span class="card-arrow">↗</span></a>
 
         <a class="tool-card" data-search="图片尺寸 元数据 修复 JPEG PNG WebP" href="image-fix/index.html"><span class="card-icon"><img src="assets/icons/image-fix.svg" alt=""></span><span class="card-index">05 / IMAGE</span><h2>图片尺寸元数据修复</h2><p>读取 JPEG、PNG、WebP 尺寸字段；修改后另存派生副本，不覆盖原图。</p><span class="card-arrow">↗</span></a>
-        <a class="tool-card" data-search="EXE PE 可执行文件 逆向 静态分析 哈希 SHA MD5 SHA256 编程语言 编译器 字符串 YARA 规则扫描" href="exe-analysis/index.html"><span class="card-icon">PE</span><span class="card-index">06 / EXECUTABLE</span><h2>EXE 静态分析</h2><p>分析 PE 结构、哈希和编译语言线索，提取字符串并运行本地规则扫描。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="EXE PE 可执行文件 逆向 静态分析 哈希 SHA MD5 SHA256 编程语言 编译器 字符串 YARA 规则扫描" href="exe-analysis/index.html"><span class="card-icon"><img src="assets/icons/exe-analysis.svg" alt=""></span><span class="card-index">06 / EXECUTABLE</span><h2>EXE 静态分析</h2><p>分析 PE 结构、哈希和编译语言线索，提取字符串并运行本地规则扫描。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="CA 证书 X.509 PEM Base64 DER 证书颁发机构 Issuer Subject 序列号 有效期 公钥 指纹 扩展" href="ca-certificate/index.html"><span class="card-icon"><img src="assets/icons/ca-certificate.svg" alt=""></span><span class="card-index">07 / X.509</span><h2>CA 证书分析</h2><p>粘贴 PEM 或 Base64 证书，在本地解析 X.509 身份、有效期、公钥和 CA 扩展。</p><span class="card-arrow">↗</span></a>
       </div>
     </section>
     <section class="tool-category" aria-labelledby="category-mobile-title">
@@ -48,7 +49,8 @@
     <section class="tool-category" aria-labelledby="category-utility-title">
       <div class="tool-category-heading"><div><p class="kicker">03 / DATA UTILITIES</p><h2 id="category-utility-title">数据处理</h2></div><p>转换常见编码、时间值，或使用本地字典查找候选。</p></div>
       <div class="tool-grid" aria-label="数据处理工具">
-        <a class="tool-card" data-search="Base64 编码 解码 URL-safe" href="base64/index.html"><span class="card-icon"><img src="assets/icons/base64.svg" alt=""></span><span class="card-index">08 / ENCODE</span><h2>Base64 编解码</h2><p>按行批量转换文本，支持标准及 URL-safe 格式。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="手机号 手机 电话 归属地 省市 运营商 通讯录 批量导入 VCF CSV XLS XLSX JSON XML SQLite DB LDIF 去重" href="phone-lookup/index.html"><span class="card-icon"><img src="assets/icons/phone-lookup.svg" alt=""></span><span class="card-index">08 / PHONE LOOKUP</span><h2>手机号归属地查询</h2><p>单号查询或导入通讯录、表格和数据库文件，离线识别号码、去重并统计省市与运营商。</p><span class="card-arrow">↗</span></a>
+        <a class="tool-card" data-search="Base64 编码 解码 URL-safe" href="base64/index.html"><span class="card-icon"><img src="assets/icons/base64.svg?v=20261022-1" alt=""></span><span class="card-index">08 / ENCODE</span><h2>Base64 编解码</h2><p>按行批量转换文本，支持标准及 URL-safe 格式。</p><span class="card-arrow">↗</span></a>
         <a class="tool-card" data-search="时间戳 日期 时间 时区转换" href="timestamp/index.html"><span class="card-icon"><img src="assets/icons/timestamp.svg" alt=""></span><span class="card-index">09 / TIME</span><h2>时间戳转换</h2><p>秒、毫秒与日期时间互转，支持时区选择和批量输入。</p><span class="card-arrow">↗</span></a>
         <a class="tool-card" data-search="MD5 字典 匹配 哈希 候选" href="md5/index.html"><span class="card-icon"><img src="assets/icons/md5.svg" alt=""></span><span class="card-index">10 / MD5</span><h2>MD5 字典匹配</h2><p>使用本地字典查找 MD5 候选值，最多 8 个并行线程。</p><span class="card-arrow">↗</span></a>
       </div>
