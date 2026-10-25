@@ -1,2 +1,51 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>图片尺寸元数据修复 · SimplerForensics</title><link rel="stylesheet" href="../assets/style.css"><link rel="icon" type="image/x-icon" href="../assets/favicon.ico"><script defer src="../assets/nav.js?v=20261015-4"></script><script defer src="../assets/custom-select.js"></script><script defer src="app.js"></script></head><body><header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header><main class="page-shell"><div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>图片尺寸元数据修复</span></div><section class="page-heading"><div><p class="kicker">05 / IMAGE METADATA</p><h1>图片尺寸元数据修复</h1><p>分析 JPEG、PNG、WebP 的尺寸记录。修复会另存新文件，不覆盖原图。</p></div><span class="chip">不重编码像素</span></section><section class="panel"><div class="drop-zone" id="drop"><strong>拖动图片到这里，或选择本地文件</strong><span class="hint">支持 JPEG、PNG、WebP；文件只在浏览器本地读取。</span><input class="file-input" style="margin-top:16px" id="file" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"></div><div id="analysis" hidden><div class="tool-layout image-fix-grid" style="margin-top:18px"><div class="panel" style="margin:0"><h2>检测到的元数据</h2><div id="details" class="result-box"></div><img id="preview" class="image-preview" alt="原始图片预览" hidden></div><div class="panel" style="margin:0"><div class="pixel-estimate"><h3>检测到的可能图片尺寸</h3><div id="pixel-info" class="result-box pixel-info">选择图片后，会尝试从编码数据中独立推算尺寸。</div></div><h2>修改尺寸元数据</h2><p class="hint">左侧展示从文件读取到的尺寸字段，作为参考。分析结果只是推测，不保证正确；目标宽高由你自行填写。</p><div class="field-row" style="margin-top:15px"><label><span class="field-label">目标宽度</span><input id="width" class="field" inputmode="numeric" type="number" min="1" max="100000" placeholder="宽度"></label><label><span class="field-label">目标高度</span><input id="height" class="field" inputmode="numeric" type="number" min="1" max="100000" placeholder="高度"></label></div><div class="button-row"><button class="btn btn-primary" id="save" disabled>修复并下载副本</button><button class="btn" id="reset" disabled>还原检测尺寸</button></div><div id="status" class="status">请先选择图片。</div></div></div></div></section><section class="panel"><h2>修改规则</h2><ul class="hint" style="line-height:1.9;padding-left:19px"><li>只改 JPEG SOF、PNG IHDR 或 WebP VP8/VP8L/VP8X 中记录的尺寸字段。</li><li>PNG 会重新计算 IHDR CRC；这是元数据校验值，不涉及像素数据。</li><li>像素编码数据不会重新解码或重编码。尺寸不匹配图片数据时，部分查看器可能无法显示或只显示部分画面。</li><li>每次修复都会生成新文件，原文件保持不变。</li></ul></section><footer class="tool-footer">版权所有 Star Rain (GYY)</footer></main>  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
-</body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>图片尺寸元数据修复 · SimplerForensics</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261015-4"></script>
+  <script defer src="../assets/custom-select.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>图片尺寸元数据修复</span></div>
+    <section class="page-heading"><div><p class="kicker">05 / IMAGE METADATA</p><h1>图片尺寸元数据修复</h1><p>分析 JPEG、PNG、WebP 的尺寸记录。可添加多张图片或导入整个文件夹，修复后另存副本，不覆盖原图。</p></div><span class="chip">不重编码像素</span></section>
+    <section class="panel">
+      <div class="drop-zone" id="drop">
+        <strong>拖动图片到这里，或选择多张图片 / 文件夹</strong>
+        <span class="hint">支持 JPEG、PNG、WebP；文件只在浏览器本地读取。文件夹中的子目录会一并扫描。</span>
+        <div class="image-pickers">
+          <label class="btn">选择多张图片<input id="file" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple></label>
+          <label class="btn">选择文件夹<input id="folder" type="file" webkitdirectory directory multiple></label>
+        </div>
+      </div>
+      <div id="queue-panel" class="queue-panel" hidden>
+        <div class="queue-heading"><h2>待处理图片</h2><span id="queue-count" class="chip">0 张</span><button class="btn" id="clear-queue" type="button">清空列表</button></div>
+        <div id="file-list" class="image-file-list"></div>
+      </div>
+      <div id="analysis" hidden>
+        <div class="tool-layout image-fix-grid" style="margin-top:18px">
+          <div class="panel" style="margin:0"><h2>检测到的元数据</h2><div id="details" class="result-box"></div><img id="preview" class="image-preview" alt="原始图片预览" hidden></div>
+          <div class="panel" style="margin:0">
+            <div class="pixel-estimate"><h3>检测到的可能图片尺寸</h3><div id="pixel-info" class="result-box pixel-info">选择图片后，会尝试从编码数据中独立推算尺寸。</div></div>
+            <h2>修改尺寸元数据</h2>
+            <p class="hint">左侧尺寸字段仅作参考，真实尺寸只能推测。批量修复会把以下宽高应用到列表中的所有图片；不兼容或无法解析的文件会跳过。</p>
+            <div class="field-row" style="margin-top:15px"><label><span class="field-label">目标宽度</span><input id="width" class="field" inputmode="numeric" type="number" min="1" max="100000" placeholder="宽度"></label><label><span class="field-label">目标高度</span><input id="height" class="field" inputmode="numeric" type="number" min="1" max="100000" placeholder="高度"></label></div>
+            <div class="button-row"><button class="btn btn-primary" id="save" disabled>修复当前图片并下载</button><button class="btn" id="save-all" disabled>批量修复并下载全部</button><button class="btn" id="reset" disabled>还原当前检测尺寸</button></div>
+            <div id="status" class="status">请先选择图片。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="panel"><h2>修改规则</h2><ul class="hint" style="line-height:1.9;padding-left:19px"><li>只改 JPEG SOF、PNG IHDR 或 WebP VP8/VP8L/VP8X 中记录的尺寸字段。</li><li>PNG 会重新计算 IHDR CRC；这是元数据校验值，不涉及像素数据。</li><li>像素编码数据不会重新解码或重编码。尺寸不匹配图片数据时，部分查看器可能无法显示或只显示部分画面。</li><li>每次修复都会生成新文件，原文件保持不变。批量下载时，浏览器可能会提示是否允许下载多个文件。</li></ul></section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body>
+</html>
