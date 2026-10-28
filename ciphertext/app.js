@@ -36,14 +36,15 @@ function workerMain() {
   onmessage = async function (event) {
     const item = event.data;
     if (item.type === 'init') { bcryptTargets = item.bcryptTargets; pbkdf2Targets = item.pbkdf2Targets; return; }
-    const bytes = new TextEncoder().encode(item.text);
+    const candidateText = item.saltPosition === 'before' ? item.salt + item.text : item.text + item.salt;
+    const bytes = new TextEncoder().encode(candidateText);
     const hashes = {};
     const bcryptMatches = [];
     const pbkdf2Matches = [];
     for (const algorithm of item.algorithms) {
       if (algorithm === 'BCRYPT') {
         for (const target of bcryptTargets) {
-          try { const marker = String.fromCharCode(36); const normalized = target.slice(0,4) === marker + '2y' + marker ? marker + '2b' + marker + target.slice(4) : target; if (dcodeIO.bcrypt.compareSync(item.text, normalized)) bcryptMatches.push(target); } catch (_) {}
+          try { const marker = String.fromCharCode(36); const normalized = target.slice(0,4) === marker + '2y' + marker ? marker + '2b' + marker + target.slice(4) : target; if (dcodeIO.bcrypt.compareSync(candidateText, normalized)) bcryptMatches.push(target); } catch (_) {}
         }
       } else if (algorithm === 'PBKDF2-SHA256') {
         for (const target of pbkdf2Targets) {
@@ -62,7 +63,7 @@ function workerMain() {
         hashes[algorithm] = Array.from(new Uint8Array(digest), function (b) { return b.toString(16).padStart(2, '0'); }).join('');
       }
     }
-    postMessage({text:item.text, fileName:item.fileName, lineNo:item.lineNo, hashes:hashes, bcryptMatches:bcryptMatches, pbkdf2Matches:pbkdf2Matches});
+    postMessage({text:item.text, candidateText:candidateText, fileName:item.fileName, lineNo:item.lineNo, hashes:hashes, bcryptMatches:bcryptMatches, pbkdf2Matches:pbkdf2Matches});
   };
 }
 
@@ -81,7 +82,7 @@ class Pool {
           this.busy[i] = false; this.active--;
           const result = event.data; this.total++;
           for (const hash of Object.values(result.hashes).concat(result.bcryptMatches, result.pbkdf2Matches)) {
-            if (this.targets.has(hash)) this.onMatch(hash, result.text, result.fileName, result.lineNo);
+            if (this.targets.has(hash)) this.onMatch(hash, result.text, result.candidateText, result.fileName, result.lineNo);
           }
           this.dispatch(); this.wake();
         };
@@ -150,6 +151,7 @@ function renderResults(targets, matches, elapsed) {
     Array.from(targets.keys()).map((hash) => {
       const match = matches.get(hash);
       return ['密文（' + targets.get(hash) + '）：' + hash, '明文：' + (match ? match.text : '（未找到）'), '匹配结果：' + (match ? '已匹配' : '未匹配')]
+        .concat(match && match.candidateText !== match.text ? ['参与哈希的文本：' + match.candidateText] : [])
         .concat(match ? ['字典文件：' + match.fileName, '字典行号：' + match.lineNo] : []).join('\n');
     }).join('\n\n──────────────\n\n');
 }
@@ -189,13 +191,14 @@ $('#start').addEventListener('click', async () => {
   const files = dictionaryFiles();
   if (!files.length) { $('#status').className = 'status error'; $('#status').textContent = '请先选择 dicts 文件夹或 TXT 字典文件。'; return; }
   const threadCount = Math.min(8, Math.max(1, Number($('#threads').value) || 1));
+  const salt = $('#salt').value, saltPosition = $('#salt-position').value;
   const matches = new Map(), startedAt = performance.now();
   $('#results').textContent = renderResults(targets, matches, 0);
   $('#start').disabled = true; $('#stop').disabled = false; $('#progress').style.width = '0%';
   run = {stop:false, pool:null};
   try {
-    const pool = new Pool(threadCount, new Set(targets.keys()), algorithms, (hash,text,fileName,lineNo) => {
-      if (!matches.has(hash)) { matches.set(hash, {text:text,fileName:fileName,lineNo:lineNo}); $('#results').textContent = renderResults(targets, matches, performance.now() - startedAt); }
+    const pool = new Pool(threadCount, new Set(targets.keys()), algorithms, (hash,text,candidateText,fileName,lineNo) => {
+      if (!matches.has(hash)) { matches.set(hash, {text:text,candidateText:candidateText,fileName:fileName,lineNo:lineNo}); $('#results').textContent = renderResults(targets, matches, performance.now() - startedAt); }
     });
     run.pool = pool;
     let count = 0;
@@ -208,7 +211,7 @@ $('#start').addEventListener('click', async () => {
         lineNo++;
         if (run.stop || matches.size === targets.size) break;
         await pool.slot();
-        pool.submit({text:raw.replace(/\r$/, ''),fileName:fileName,lineNo:lineNo,algorithms:algorithms});
+        pool.submit({text:raw.replace(/\r$/, ''),salt:salt,saltPosition:saltPosition,fileName:fileName,lineNo:lineNo,algorithms:algorithms});
         count++;
         if (count % 500 === 0) $('#status').textContent = '正在处理 ' + (fileIndex + 1) + '/' + files.length + '：' + fileName + '\n已读取候选词：' + count + ' · 匹配：' + matches.size + '/' + targets.size + ' · 已耗时：' + formatDuration(performance.now() - startedAt);
       }

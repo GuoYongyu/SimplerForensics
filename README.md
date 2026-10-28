@@ -36,7 +36,7 @@ SimplerForensics 是一组可离线使用的本地工具，基于原生 HTML、C
 
 ### 密文字典匹配
 
-在页面中选择 ciphertext/dicts 文件夹，或手动选择 TXT 字典文件。支持自动检测和指定 MD5、SHA-1、SHA-256、SHA-384、SHA-512、bcrypt 及 Django 格式 PBKDF2-SHA256。浏览器因本地文件安全限制，不会在未选择的情况下读取相邻文件。若希望按从易到难的顺序尝试字典，可在文件名前添加 00-、10- 等编号。bcrypt.js 浏览器实现及许可证见 ciphertext/BCRYPT-LICENSE.txt。
+在页面中选择 ciphertext/dicts 文件夹，或手动选择 TXT 字典文件。支持自动检测和指定 MD5、SHA-1、SHA-256、SHA-384、SHA-512、bcrypt 及 Django 格式 PBKDF2-SHA256。可选输入额外 Salt 文本，并选择将其直接拼接到字典明文前或后（不加分隔符），再对拼接后的候选文本进行匹配；结果会同时显示原始字典明文和实际参与哈希的文本。浏览器因本地文件安全限制，不会在未选择的情况下读取相邻文件。若希望按从易到难的顺序尝试字典，可在文件名前添加 00-、10- 等编号。bcrypt.js 浏览器实现及许可证见 ciphertext/BCRYPT-LICENSE.txt。
 
 ### 文件与图片分析
 
