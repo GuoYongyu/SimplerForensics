@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const state = { rows: [], duplicates: 0, invalid: 0, sources: [], visible: 100, busy: false };
+  const state = { rows: [], invalidRows: [], duplicates: 0, sources: [], visible: 100, busy: false };
   const EXTENSIONS = new Set(['txt','csv','tsv','vcf','vcard','ldif','json','jsonl','ndjson','xml','html','htm','mhtml','eml','mbox','sql','log','md','yaml','yml','ini','conf','properties','xlsx','xlsm','xltx','xls','ods','ots','db','sqlite','sqlite3','db3','s3db','mdb','accdb','dbf','docx','odt','rtf','pdf','zip','epub','ics','bak','dat','contact','ab','addressbook','vcf3']);
   const KNOWN_ZIP_TEXT = /\.(?:xml|rels|txt|csv|json|html|htm|vcf|vcard|ldif|sql|md|yaml|yml|eml)$/i;
   const PHONE_HEADERS = /(?:^|[^a-z])(mobile|cell|phone|telephone|tel|contact|号码|手机|电话|联系电话|手机号|移动电话)(?:$|[^a-z])/i;
@@ -48,7 +48,8 @@
     const found=[]; const re=/(?:\+?86|0086)?[\s().\-－—]*1[3-9](?:[\s().\-－—]*\d){9}/g;
     let m;
     while ((m=re.exec(text))) {
-      const before=text[m.index-1]||'', after=text[m.index+m[0].length]||'';
+      const coreStart=m[0].search(/(?:\+?86|0086)[\s().\-－—]*1[3-9]|1[3-9]/);
+      const before=text[m.index+Math.max(0,coreStart)-1]||'', after=text[m.index+m[0].length]||'';
       if (/\d/.test(before) || /\d/.test(after)) continue;
       const number=normalizePhone(m[0]); if (!number) continue;
       const lineStart=text.lastIndexOf('\n',m.index)+1, lineEnd=text.indexOf('\n',re.lastIndex);
@@ -57,6 +58,27 @@
       found.push({ number, source, context, _index:m.index });
     }
     return found;
+  }
+  function findInvalidPhones(text, source) {
+    const found=[], re=/(?:\+?\d(?:[\t \u00a0().\-－—]*\d){6,14})/g;
+    let m;
+    while((m=re.exec(text))){
+      const digits=m[0].replace(/\D/g,'');
+      if(digits.length<7||digits.length>15||normalizePhone(m[0]))continue;
+      const before=text[m.index-1]||'',after=text[m.index+m[0].length]||'';
+      if(/\d/.test(before)||/\d/.test(after))continue;
+      const lineStart=text.lastIndexOf('\n',m.index)+1,lineEnd=text.indexOf('\n',re.lastIndex);
+      const context=text.slice(lineStart,lineEnd<0?Math.min(text.length,lineStart+240):lineEnd).replace(/\s+/g,' ').trim().slice(0,200);
+      if(!/^[+0148]/.test(m[0])&&!PHONE_HEADERS.test(context))continue;
+      found.push({digits,number:m[0].trim(),source,context});
+    }
+    return found;
+  }
+  function addInvalid(findings) {
+    const map=new Map(state.invalidRows.map(row=>[row.digits,row]));
+    let added=0;
+    for(const item of findings)if(!map.has(item.digits)){map.set(item.digits,item);state.invalidRows.push(item);added++;}
+    return added;
   }
   async function findPhonesAsync(text, source) {
     const chunkSize=1024*1024;
@@ -153,6 +175,7 @@
   function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function render() {
     const rows=state.rows, matched=rows.filter(r=>r.province!=='未命中'), prov=new Map(), ops=new Map(), cities=new Map();
+    renderInvalid();
     for(const r of matched){prov.set(r.province,(prov.get(r.province)||0)+1);ops.set(r.operator,(ops.get(r.operator)||0)+1);const k=`${r.province} ${r.city}`;cities.set(k,(cities.get(k)||0)+1);}
     $('results').hidden=!rows.length; if(!rows.length)return;
     const counts=[['有效号码',rows.length,'已去重'],['命中归属地',matched.length,`${rows.length?Math.round(matched.length/rows.length*100):0}% 覆盖`],['重复号码',state.duplicates,'已自动合并'],['未命中号段',rows.length-matched.length,'数据未覆盖的号码']];
@@ -164,6 +187,12 @@
     $('table-summary').textContent=`显示 ${shown.length.toLocaleString()} / ${filtered.length.toLocaleString()} 条`;$('toggle-rows').hidden=filtered.length<=state.visible;$('toggle-rows').setAttribute('aria-label',state.visible>=filtered.length?'收起到前 100 条':'显示全部号码');$('toggle-rows').setAttribute('aria-expanded',String(state.visible>=filtered.length));$('toggle-rows').classList.toggle('is-expanded',state.visible>=filtered.length);
     $('stats-caption').textContent=`按 ${matched.length.toLocaleString()} 条已命中号码统计`;
   }
+  function renderInvalid() {
+    const rows=state.invalidRows;
+    $('invalid-results').hidden=!rows.length;
+    $('invalid-count').textContent=rows.length.toLocaleString();
+    $('invalid-rows').innerHTML=rows.map(r=>`<tr><td class="mono">${esc(r.number)}</td><td>${esc(r.source||'粘贴文本')}</td><td>${esc(r.context)}</td></tr>`).join('');
+  }
   async function parseFile(file) {
     if(file.size>128*1024*1024)throw Error('文件超过 128 MiB 上限。');
     const ext=(file.name.split('.').pop()||'').toLowerCase();
@@ -174,25 +203,26 @@
     if(zip){const entries=await readZipEntries(buffer);if(!entries.length)note='压缩容器中没有可读取的文本条目';else if(['xlsx','xlsm','xltx'].includes(ext))text=xlsxText(entries);else if(['ods','ots'].includes(ext))text=odsText(entries);else text=entries.map(e=>e.text).join('\n');}
     else if(['xls'].includes(ext)||ole){try{text=readXls(buffer);}catch(error){const decoded=decodeBytes(buffer);text=decoded.text+'\n'+new TextDecoder('utf-16le').decode(new Uint8Array(buffer));note=`OLE / XLS 结构读取不完整，已尽力扫描可读文本：${error.message}`;}}
     else {const decoded=decodeBytes(buffer);text=decoded.text;if(decoded.binary)note='按可读文本扫描二进制内容';if(['db','sqlite','sqlite3','db3','s3db','mdb','accdb','dbf','pdf'].includes(ext))note=note||'数据库 / 文档采用可读文本尽力扫描';if(!EXTENSIONS.has(ext))note=note||'扩展名不在内置列表，已按内容尝试扫描';text=extractStructuredText(text,ext);if(buffer.byteLength>=2){const le=new TextDecoder('utf-16le').decode(new Uint8Array(buffer));if(le.includes('\0')||le.match(/1[3-9]/))text+='\n'+le;}}
-    const findings=await findPhonesAsync(text,file.name);
-    return {findings, note, name:file.name, ext};
+    const findings=await findPhonesAsync(text,file.name), invalid=findInvalidPhones(text,file.name);
+    return {findings, invalid, note, name:file.name, ext};
   }
   async function runFiles(files) {
     if(state.busy||!files.length)return;state.busy=true;$('progress-wrap').hidden=false;$('progress').value=0;setStatus(`正在读取 ${files.length} 个本地文件…`,'warning');
-    const findings=[];const notes=[];const failed=[];let index=0;
-    for(const file of files){index++;$('progress-label').textContent=`正在识别 ${file.name}（${index}/${files.length}）`;$('progress').value=(index-1)/files.length*100;try{const r=await parseFile(file);findings.push(...r.findings);state.sources.push(file.name);if(r.note)notes.push(`${r.name}：${r.note}`);}catch(e){failed.push(`${file.name}：${e.message}`);}await new Promise(resolve=>setTimeout(resolve,0));}
-    $('progress').value=100;addFindings(findings);state.visible=100;render();state.busy=false;$('progress-wrap').hidden=true;
+    const findings=[];const invalid=[];const notes=[];const failed=[];let index=0;
+    for(const file of files){index++;$('progress-label').textContent=`正在识别 ${file.name}（${index}/${files.length}）`;$('progress').value=(index-1)/files.length*100;try{const r=await parseFile(file);findings.push(...r.findings);invalid.push(...r.invalid);state.sources.push(file.name);if(r.note)notes.push(`${r.name}：${r.note}`);}catch(e){failed.push(`${file.name}：${e.message}`);}await new Promise(resolve=>setTimeout(resolve,0));}
+    $('progress').value=100;addFindings(findings);const invalidAdded=addInvalid(invalid);state.visible=100;render();state.busy=false;$('progress-wrap').hidden=true;
     let msg=`完成：从 ${files.length} 个文件中识别 ${findings.length} 个号码，去重后共 ${state.rows.length} 个。`;
     if(!findings.length)msg='未识别到符合大陆手机号格式的号码。可粘贴文本，或检查文件是否包含可读取的号码字段。';
+    if(invalidAdded)msg+=` 另发现 ${invalidAdded} 个疑似无效号码，详情见下方清单。`;
     if(notes.length)msg+=` ${notes.slice(0,3).join('；')}${notes.length>3?'…':''}。`;
     if(failed.length)msg+=` ${failed.length} 个文件读取失败：${failed.slice(0,2).join('；')}`;
     setStatus(msg,failed.length?'warning':findings.length?'success':'warning');
   }
-  async function analyzePaste() { const text=$('paste-numbers').value;if(!text.trim()){setStatus('请粘贴号码或包含号码的文本。','warning');return;}const findings=await findPhonesAsync(text,'粘贴文本');addFindings(findings);state.visible=100;render();setStatus(findings.length?`识别 ${findings.length} 个号码，新增 ${state.rows.length} 条去重结果。`:'没有找到符合格式的大陆手机号。',findings.length?'success':'warning'); }
+  async function analyzePaste() { const text=$('paste-numbers').value;if(!text.trim()){setStatus('请粘贴号码或包含号码的文本。','warning');return;}const findings=await findPhonesAsync(text,'粘贴文本'),invalid=findInvalidPhones(text,'粘贴文本');addFindings(findings);const invalidAdded=addInvalid(invalid);state.visible=100;render();let message=findings.length?`识别 ${findings.length} 个号码，新增 ${state.rows.length} 条去重结果。`:'没有找到符合格式的大陆手机号。';if(invalidAdded)message+=` 另发现 ${invalidAdded} 个疑似无效号码，详情见下方清单。`;setStatus(message,findings.length?'success':'warning'); }
   function lookupOne() { const raw=$('single-phone').value.trim(), number=normalizePhone(raw);if(!number){$('single-result').innerHTML='<div class="phone-empty-mark error-mark">!</div><div><strong>号码格式不正确</strong><span>请输入 11 位大陆手机号，或完整的前 7 位号段。</span></div>';return;}const info=lookup(number);if(!info){$('single-result').innerHTML=`<div class="phone-empty-mark error-mark">?</div><div><strong>${esc(number)} · 未找到号段</strong><span>当前内置数据未覆盖此前 7 位号段。</span></div>`;return;}$('single-result').innerHTML=`<div class="single-check">✓</div><div class="single-main"><strong>${esc(number)}</strong><span>${esc(info.province)} · ${esc(info.city)}</span></div><div class="single-operator"><span>号段归属运营商</span><strong>${esc(info.operator)}</strong>${info.virtual?`<small>虚拟品牌：${esc(info.virtual)}</small>`:''}</div>`; }
   $('lookup-one').addEventListener('click',lookupOne);$('single-phone').addEventListener('keydown',e=>{if(e.key==='Enter')lookupOne();});$('analyze-paste').addEventListener('click',analyzePaste);$('filter-results').addEventListener('input',render);$('toggle-rows').addEventListener('click',()=>{state.visible=state.visible>=state.rows.length?100:state.rows.length;render();});$('toggle-details').addEventListener('click',()=>{const button=$('toggle-details'),expanded=button.getAttribute('aria-expanded')==='true';button.setAttribute('aria-expanded',String(!expanded));button.setAttribute('aria-label',expanded?'展开号码明细':'收起号码明细');$('table-content').hidden=expanded;});
   $('sample-data').addEventListener('click',()=>{$('paste-numbers').value='张先生，138 0013 8000\n+86 132 1300 0000\n联系：020-88886666，手机 13900139000\n重复测试：13800138000';});
-  $('clear-all').addEventListener('click',()=>{state.rows=[];state.duplicates=0;state.invalid=0;state.sources=[];$('results').hidden=true;$('paste-numbers').value='';$('batch-status').hidden=true;$('file-input').value='';});
+  $('clear-all').addEventListener('click',()=>{state.rows=[];state.invalidRows=[];state.duplicates=0;state.sources=[];$('results').hidden=true;$('invalid-results').hidden=true;$('paste-numbers').value='';$('batch-status').hidden=true;$('file-input').value='';});
   $('file-input').addEventListener('change',e=>runFiles([...e.target.files]));
   const zone=$('drop-zone');zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');runFiles([...e.dataTransfer.files]);});zone.addEventListener('keydown',e=>{if(e.target===zone&&(e.key==='Enter'||e.key===' ')){$('file-input').click();e.preventDefault();}});
   $('export-results').addEventListener('click',()=>{const header=['号码','省份','城市','运营商','备注','来源文件','上下文'];const quote=v=>{let s=String(v??'');if(/^[\s\u0000]*[=+\-@]/.test(s))s="'"+s;return `"${s.replace(/"/g,'""')}"`;};const csv='\ufeff'+[header,...state.rows.map(r=>[r.number,r.province,r.city,r.operator,r.remark,r.source,r.context])].map(row=>row.map(quote).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='手机号归属地查询结果.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus(`已导出 ${state.rows.length} 条号码结果。`,'success');});

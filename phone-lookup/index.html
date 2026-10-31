@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08111f">
   <title>手机号归属地查询 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
+  <link rel="stylesheet" href="style.css?v=20261031-1">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261021-1"></script>
+  <script defer src="../assets/nav.js?v=20261031-2"></script>
   <script defer src="data/phone-data.js?v=202605"></script>
-  <script defer src="app.js?v=20261021-1"></script>
+  <script defer src="app.js?v=20261031-3"></script>
 </head>
 <body>
   <header class="topbar">
@@ -63,6 +63,12 @@
         <div id="table-content" hidden><div class="table-wrap"><table class="phone-table"><thead><tr><th>号码</th><th>省份</th><th>城市</th><th>运营商</th><th>备注</th></tr></thead><tbody id="result-rows"></tbody></table></div>
         <div class="phone-table-foot"><span id="table-summary"></span><button class="btn icon-button rows-toggle" id="toggle-rows" type="button" hidden aria-label="显示全部号码"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div></div>
       </div>
+    </section>
+
+    <section class="panel phone-invalid-panel" id="invalid-results" hidden aria-labelledby="invalid-title">
+      <div class="phone-section-head"><div><p class="kicker">REVIEW NUMBERS</p><h2 id="invalid-title">疑似无效号码 <span class="count-pill" id="invalid-count">0</span></h2></div></div>
+      <p class="hint">这些内容看起来像电话号码，但不符合当前大陆手机号格式；请核对原始数据。该标记不代表号码一定不存在。</p>
+      <div class="table-wrap"><table class="phone-table invalid-phone-table"><thead><tr><th>原始内容</th><th>来源</th><th>所在行 / 上下文</th></tr></thead><tbody id="invalid-rows"></tbody></table></div>
     </section>
 
     <details class="panel phone-notes"><summary>数据来源、范围与识别说明</summary><div class="phone-notes-body">
