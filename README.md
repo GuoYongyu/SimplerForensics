@@ -1,36 +1,39 @@
-# SimplerForensics
+<div align="center">
+  <img src="assets/icons/brand.svg" width="76" alt="SimplerForensics 标志">
+  <h1>SimplerForensics</h1>
+  <p><strong>轻量、离线、即开即用的本地工具集</strong></p>
+  <p>面向文件分析、数据处理和数字取证日常工作的浏览器工具箱。</p>
+  <p>
+    <img src="https://img.shields.io/badge/HTML-原生页面-E34F26?logo=html5&logoColor=white" alt="HTML">
+    <img src="https://img.shields.io/badge/JavaScript-无需构建-F7DF1E?logo=javascript&logoColor=222" alt="JavaScript">
+    <img src="https://img.shields.io/badge/运行-本机离线-148F91" alt="本机离线">
+    <img src="https://img.shields.io/badge/依赖-零安装-2864E8" alt="零安装">
+  </p>
+</div>
 
-SimplerForensics 是一组可离线使用的本地工具，基于原生 HTML、CSS 和 JavaScript 编写，无需安装项目依赖。大多数工具直接在浏览器中运行；需要 APK 分析时，页面会调用本机的 JADX。
+![SimplerForensics 首页界面预览](docs/images/readme-cover.svg)
 
-## 工具一览
+> 文件和输入内容默认留在当前设备；页面无需构建或安装项目依赖。APK 静态分析需要在本机准备 JADX。
 
-| 工具 | 用途 |
-| --- | --- |
-| 密文字典匹配 | 使用本地字典匹配 MD5、SHA 系列、bcrypt、PBKDF2-SHA256 等候选值 |
-| 文件签名 | 查询常见文件格式签名，也可保存自定义记录 |
-| 十六进制查看器 | 分页查看文件字节、全文件分块搜索并导出选定范围 |
-| 文件元数据查看 | 只读解析 JPEG、TIFF、PNG、WebP、PDF 与 WAV 的可读字段 |
-| 图片尺寸 | 单张或批量修改 JPEG、PNG、WebP 尺寸元数据；支持多选或导入文件夹 |
-| 文件伪装分析 | 对照扩展名和文件头，扫描内部签名及容器边界线索 |
-| EXE 静态分析 | 本地计算多种哈希、解析 PE 结构、推测语言/工具链、提取字符串并扫描内置规则 |
-| CA 证书分析 | 离线解析 PEM 或 Base64 X.509 证书的名称、有效期、公钥、指纹和扩展 |
-| 隐写初筛 | 统计 PNG 像素和 PCM WAV 样本的低位分布 |
-| APK 分析 | 查看 Manifest、权限、入口、代码特征和静态网址 |
-| 二维码识别 | 在浏览器中识别图片里的二维码 |
-| 手机号归属地 | 离线查询大陆手机号码号段，批量导入联系人/表格/文本并统计、去重 |
-| Linux 指令检索 | 按命令、中文关键词、近似拼写、路径和示例查找命令 |
-| 代码指令检索 | 按语言与用途查找编译、运行、构建、测试、容器、Kubernetes 和 TLS 证书命令 |
-| Windows 工具 | 使用离线整理的 Windows 相关工具和资料 |
-| 时间戳、Base64 等 | 处理常见编码与时间戳转换 |
+## 🧭 工具一览
 
-## 启动
+| 文件分析 | 移动与媒体 |
+|:--|:--|
+| <img src="assets/icons/signature.svg" width="20" alt=""> [文件格式速查](signatures/index.html) · <img src="assets/icons/hex-viewer.svg" width="20" alt=""> [十六进制查看器](hex-viewer/index.html) · <img src="assets/icons/metadata-viewer.svg" width="20" alt=""> [元数据查看](metadata-viewer/index.html) · <img src="assets/icons/file-disguise.svg" width="20" alt=""> [文件伪装分析](file-disguise/index.html)<br><br><img src="assets/icons/image-fix.svg" width="20" alt=""> [图片尺寸修复](image-fix/index.html) · <img src="assets/icons/exe-analysis.svg" width="20" alt=""> [EXE 静态分析](exe-analysis/index.html) · <img src="assets/icons/ca-certificate.svg" width="20" alt=""> [CA 证书分析](ca-certificate/index.html) | <img src="assets/icons/apk-file.svg" width="20" alt=""> [APK 元数据解析](apk/index.html) · <img src="assets/icons/qr.svg" width="20" alt=""> [二维码识别](qr-reader/index.html) |
+| 数据处理 | 资料检索 |
+|:--|:--|
+| <img src="assets/icons/phone-lookup.svg" width="20" alt=""> [手机号归属地](phone-lookup/index.html) · <img src="assets/icons/base64.svg" width="20" alt=""> [Base64 编解码](base64/index.html) · <img src="assets/icons/timestamp.svg" width="20" alt=""> [时间戳转换](timestamp/index.html) · <img src="assets/icons/md5.svg" width="20" alt=""> [密文字典匹配](ciphertext/index.html) | <img src="assets/icons/linux-terminal.svg" width="20" alt=""> [Linux 指令检索](linux/index.html) · <img src="assets/icons/code-commands.svg" width="20" alt=""> [代码指令检索](code-commands/index.html) · <img src="assets/icons/windows.svg" width="20" alt=""> [Windows 配置指南](windows/index.html) |
+
+## 🚀 快速启动
 
 推荐双击对应系统的启动脚本：
 
-- macOS：launch.command
-- Windows：launch.bat
+- **macOS**：`launch.command`
+- **Windows**：`launch.bat`
 
-脚本会启动只监听本机 127.0.0.1 的网页服务并打开入口页，不需要 Python。也可以用 Chrome 或 Edge 直接打开根目录的 index.html；部分浏览器会限制从 file:// 页面打开其他本地页面。若 macOS 浏览器显示 ERR_ACCESS_DENIED，请使用 launch.command。如果启动脚本提示 Ruby/WEBrick 不可用，可尝试直接打开入口页。
+启动脚本会在本机 `127.0.0.1` 打开网页服务，不需要 Python。也可以用 Chrome 或 Edge 直接打开根目录的 `index.html`；部分浏览器会限制从 `file://` 页面打开其他本地页面。若 macOS 浏览器显示 `ERR_ACCESS_DENIED`，请使用 `launch.command`。如果提示 Ruby/WEBrick 不可用，可尝试直接打开入口页。
+
+---
 
 ## 各工具说明
 
@@ -81,7 +84,7 @@ CA 证书分析位于 `ca-certificate/`，可粘贴单张或多张 PEM `CERTIFIC
 
 ### 手机号归属地查询
 
-页面位于 phone-lookup/，附带 [jieeit/phone](https://github.com/jieeit/phone) 发布的截至 2026 年 5 月离线号段数据库（约 52 万条），按号码前 7 位查询省市及运营商；支持文本、VCF/vCard、LDIF、CSV/TSV、XLSX、XLS、ODS、JSON/JSONL、XML、HTML、SQL、日志、SQLite/Access 等多种格式的本地号码提取、去重、统计和 CSV 导出。Office Open XML ZIP 文档可结构化读取；其他二进制数据库按可读文本尽力扫描，不保证提取压缩、加密或二进制字段。归属地表示号段登记地，不是持有人实时位置，携号转网也可能导致当前运营商与号段记录不一致。数据源及 MIT 许可证随 phone-lookup/data/ 一同提供。
+页面位于 `phone-lookup/`，附带 [jieeit/phone](https://github.com/jieeit/phone) 发布的截至 2026 年 5 月离线号段数据库（约 52 万条），按号码前 7 位查询省市及运营商；支持文本、VCF/vCard、LDIF、CSV/TSV、XLSX、XLS、ODS、JSON/JSONL、XML、HTML、SQL、日志、SQLite/Access 等多种格式的本地号码提取、去重、统计和 CSV 导出。多行粘贴和表格批量导入会逐条识别；疑似无效号码会单独列出，并保留来源和原文上下文。Office Open XML ZIP 文档可结构化读取；其他二进制数据库按可读文本尽力扫描，不保证提取压缩、加密或二进制字段。归属地表示号段登记地，不是持有人实时位置，携号转网也可能导致当前运营商与号段记录不一致。数据源及 MIT 许可证随 `phone-lookup/data/` 一同提供。
 
 ### Linux 指令检索
 
