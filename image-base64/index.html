@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>图片 Base64 转换 · SimplerForensics</title>
+  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="app.js?v=20261111-2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a>
+    <span class="local-badge"><i></i> 仅在本地运行</span>
+  </header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>图片 Base64 转换</span></div>
+    <section class="page-heading">
+      <div>
+        <p class="kicker">10 / IMAGE BASE64</p>
+        <h1>图片 Base64 转换</h1>
+        <p>将图片转换为 Base64 或 Data URL，也可把 Base64 文本还原为图片并预览。转换只读取原始字节，不重编码像素，文件不会上传。</p>
+      </div>
+      <span class="chip">本地转换 · 双向 · 预览</span>
+    </section>
+
+    <section class="panel">
+      <div class="field-row mode-selector" role="radiogroup" aria-label="选择转换方向">
+        <label class="inline-check mode-option"><input type="radio" name="image-b64-mode" value="encode" checked> 图片 → Base64</label>
+        <label class="inline-check mode-option"><input type="radio" name="image-b64-mode" value="decode"> Base64 → 图片</label>
+      </div>
+
+      <div id="encode-view" class="image-b64-view">
+        <div class="drop-zone" id="encode-drop" tabindex="0" role="button" aria-label="选择或拖放要转换为 Base64 的图片">
+          <strong>拖动图片到这里，或点击选择</strong>
+          <span class="hint">支持 JPEG、PNG、GIF、WebP、BMP、ICO、TIFF、AVIF、HEIC 和 SVG；单张不超过 32 MiB。文件只在浏览器本地读取。</span>
+          <input class="file-input" id="encode-file" type="file" accept="image/*,.svg,.bmp,.ico,.tif,.tiff,.avif,.heic,.heif" aria-label="选择要转换为 Base64 的图片">
+        </div>
+        <div id="encode-status" class="status image-b64-status" role="status" aria-live="polite">选择一张图片开始转换。Base64 是编码方式，不是加密。</div>
+
+        <div id="encode-result" class="tool-layout image-b64-layout" hidden>
+          <section class="image-b64-column" aria-labelledby="encode-preview-heading">
+            <h2 id="encode-preview-heading">图片预览</h2>
+            <img id="encode-preview" class="image-preview b64-preview" alt="待转换图片预览" hidden>
+            <p id="encode-preview-note" class="hint b64-preview-note" hidden></p>
+            <div id="encode-info" class="b64-info-grid"></div>
+          </section>
+          <section class="image-b64-column" aria-labelledby="encode-output-heading">
+            <h2 id="encode-output-heading">Base64 输出</h2>
+            <div class="b64-options">
+              <label class="inline-check"><input id="include-prefix" type="checkbox" checked> 包含 Data URL 前缀</label>
+              <label class="inline-check"><input id="wrap-lines" type="checkbox"> 每 76 字符换行</label>
+            </div>
+            <p class="hint">Data URL 前缀形如 <code>data:image/png;base64,</code>；嵌入 HTML/CSS 时保留，提交给只接受原始 Base64 的接口时取消勾选。换行仅便于阅读，部分解析器可能不接受空白。</p>
+            <textarea id="encode-output" class="b64-output" readonly spellcheck="false" aria-label="图片的 Base64 输出" placeholder="选择图片后会在这里显示 Base64"></textarea>
+            <div class="button-row">
+              <button class="btn btn-primary" id="copy-encode" type="button" disabled>复制输出</button>
+              <button class="btn" id="download-encode" type="button" disabled>下载 .txt</button>
+              <button class="btn" id="clear-encode" type="button">清空</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div id="decode-view" class="image-b64-view" hidden>
+        <div id="decode-layout" class="tool-layout image-b64-layout is-single">
+          <section class="image-b64-column" aria-labelledby="decode-input-heading">
+            <h2 id="decode-input-heading">Base64 输入</h2>
+            <label class="field-label" for="decode-input">粘贴 Base64、Data URL，或拖入文本文件</label>
+            <textarea id="decode-input" class="b64-input" spellcheck="false" aria-label="要还原为图片的 Base64 或 Data URL" placeholder="例如：data:image/png;base64,iVBORw0KGgo…&#10;或直接粘贴 iVBORw0KGgo…"></textarea>
+            <div class="button-row">
+              <button class="btn btn-primary" id="decode" type="button">解析为图片</button>
+              <label class="btn">从文本文件载入<input class="visually-hidden-file" id="decode-file" type="file" accept=".txt,.b64,.base64,text/plain"></label>
+              <button class="btn" id="clear-decode" type="button">清空</button>
+            </div>
+            <p class="hint">支持标准 Base64、URL-safe Base64、带换行或空白的 Base64，以及 <code>data:image/...;base64,</code> 形式的 Data URL。也可以把 .txt/.b64 文件拖到输入框；解码后单张图片不超过 32 MiB。按 Ctrl/⌘ + Enter 可直接解析。</p>
+            <div id="decode-status" class="status image-b64-status" role="status" aria-live="polite">粘贴 Base64 或 Data URL，或从文本文件载入。</div>
+          </section>
+          <section class="image-b64-column" id="decode-result" aria-labelledby="decode-result-heading" hidden>
+            <h2 id="decode-result-heading">还原结果</h2>
+            <img id="decode-preview" class="image-preview b64-preview" alt="Base64 还原的图片预览" hidden>
+            <p id="decode-preview-note" class="hint b64-preview-note" hidden></p>
+            <div id="decode-info" class="b64-info-grid"></div>
+            <div class="button-row">
+              <button class="btn btn-primary" id="download-decode" type="button" disabled>下载图片</button>
+              <button class="btn" id="copy-decode" type="button" disabled>复制 Base64</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>使用说明与边界</h2>
+      <ul class="hint b64-boundary">
+        <li>Base64 是编码方式，不是加密；转换不提供保密性。任何拿到 Base64 的人都可以还原图片。</li>
+        <li>图片转 Base64 只读取原始文件字节，不重新压缩、转码或修改像素，原文件保持不变。输出体积通常约为原文件的 4/3。</li>
+        <li>Base64 转图片时会根据文件头识别实际格式；若与 Data URL 声明的类型不一致，会以实际格式预览并提示，避免仅凭扩展名或 MIME 判断。</li>
+        <li>浏览器不支持的格式（例如部分 HEIC、TIFF 编码）可能无法预览，但工具仍会校验图片头并允许下载还原后的原始字节。</li>
+        <li>SVG 可能包含脚本或外部引用。本页只在图片上下文中显示 SVG，不执行其中的脚本；下载后请使用专用查看器并谨慎打开来源不明的 SVG。</li>
+        <li>文件头识别是格式线索，不是完整性或安全性验证。损坏、截断或伪造文件头的图片可能仍被识别，预览失败时应结合其他取证工具进一步检查。</li>
+        <li>单张图片与解码结果上限为 32 MiB；Base64 输入上限约 5000 万字符。超出上限时不会读取或解码，以免浏览器内存耗尽。</li>
+      </ul>
+    </section>
+
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body>
+</html>

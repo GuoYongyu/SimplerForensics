@@ -57,7 +57,7 @@ window.LINUX_COMMANDS = [
   ['文本检索','tee','tee [选项] 文件','将管道输出同时写到终端和文件；`-a` 追加写入。',['ss -tuln | tee listening-ports.txt'],'保存 输出 日志',1],
   ['文本检索','jq','jq 过滤器 文件','解析和筛选 JSON；适合查看结构化命令输出。',['jq \'keys\' config.json'],'JSON 查询',0],
   ['文本检索','xxd','xxd [选项] 文件','以十六进制和文本形式查看文件字节，适合检查文件头或指定偏移。',['xxd -l 64 suspicious.bin'],'十六进制 文件头 取证',0],
-  ['文本检索','sha256sum','sha256sum 文件','计算 SHA-256 摘要，用于文件完整性核对。',['sha256sum evidence.img'],'哈希 校验 完整性 取证',0],
+  ['哈希与校验','sha256sum','sha256sum [选项] 文件','计算 SHA-256 摘要，用于文件完整性核对；`-c` 可按校验文件逐项验证，批量场景可配合 find 与 xargs。',['sha256sum evidence.img','sha256sum -c SHA256SUMS','find /evidence -type f -print0 | xargs -0 sha256sum > SHA256SUMS'],'哈希 校验 完整性 取证 SHA256 sha256计算 sha256校验 摘要 文件 MD5 批量',0],
 
   // System and services
   ['系统与服务','uname','uname -a','显示内核及系统架构等信息；发行版信息可另查 `/etc/os-release`。',['uname -a','cat /etc/os-release'],'系统版本 内核 架构',0],
@@ -67,8 +67,8 @@ window.LINUX_COMMANDS = [
   ['系统与服务','ps','ps [选项]','查看进程快照；`aux` 常用于列出详细进程信息。',['ps auxww','ps -ef | grep nginx'],'进程 process',0],
   ['系统与服务','top','top','交互式查看 CPU、内存和进程；按 `q` 退出。',['top'],'进程 CPU 内存 性能',0],
   ['系统与服务','free','free [-h]','查看内存与交换空间使用量；`-h` 采用易读单位。',['free -h'],'内存 swap',0],
-  ['系统与服务','df','df [-h] [路径]','查看文件系统空间使用率；`-h` 采用易读单位。',['df -hT','df -h /var'],'磁盘 剩余 空间 磁盘满 磁盘空间不足',0],
-  ['系统与服务','du','du [-sh] 路径','统计目录或文件的磁盘占用；`-s` 汇总，`-h` 易读单位。',['du -sh /var/log','du -h --max-depth=1 /srv'],'目录 占用 大文件 文件夹大小 目录大小 谁占空间',0],
+  ['磁盘与归档','df','df [-h] [路径]','查看文件系统空间使用率；`-h` 采用易读单位。',['df -hT','df -h /var'],'磁盘 剩余 空间 磁盘满 磁盘空间不足',0],
+  ['磁盘与归档','du','du [-sh] 路径','统计目录或文件的磁盘占用；`-s` 汇总，`-h` 易读单位。',['du -sh /var/log','du -h --max-depth=1 /srv'],'目录 占用 大文件 文件夹大小 目录大小 谁占空间',0],
   ['系统与服务','lsof','lsof [选项]','列出进程打开的文件；可用于定位占用文件或端口的进程。',['sudo lsof -i :8080','sudo lsof +L1'],'打开文件 端口 占用 deleted',0],
   ['系统与服务','systemctl status','systemctl status 服务','查看 systemd 服务状态和近期日志。',['systemctl status nginx --no-pager'],'服务状态 systemd',0],
   ['系统与服务','systemctl start/stop','systemctl start|stop|restart 服务','启动、停止或重启服务，会改变服务运行状态。',['sudo systemctl restart nginx'],'服务 启动 停止 重启',1],
@@ -109,20 +109,20 @@ window.LINUX_COMMANDS = [
   ['网络与端口','tcpdump','tcpdump [选项] [过滤器]','抓取网络数据包；流量可能含敏感信息，抓包文件也可能很大。',['sudo tcpdump -ni any port 443'],'抓包 网络分析 pcap',1],
 
   // Storage and archives
-  ['磁盘与归档','lsblk','lsblk [选项]','列出块设备、分区和挂载点；`-f` 显示文件系统信息。',['lsblk -f'],'磁盘 分区 设备',0],
-  ['磁盘与归档','blkid','blkid [设备]','查看块设备的文件系统类型、UUID 和标签。',['sudo blkid'],'文件系统 UUID',0],
-  ['磁盘与归档','fdisk','fdisk -l [设备]','列出磁盘分区表；交互式子命令可能修改分区，查看时只使用 `-l`。',['sudo fdisk -l'],'磁盘 分区 查看',0],
-  ['磁盘与归档','findmnt','findmnt [选项]','查看当前挂载点和文件系统；比浏览 `/proc/mounts` 更易读。',['findmnt','findmnt /mnt/evidence'],'挂载 mount 文件系统',0],
-  ['磁盘与归档','mount','mount [设备] [挂载点]','查看挂载信息或挂载文件系统；挂载选项会影响证据或数据状态。',['findmnt','sudo mount -o ro /dev/loop0p1 /mnt/evidence'],'挂载 只读 磁盘镜像',1],
+  ['磁盘与归档','lsblk','lsblk [选项]','列出块设备、分区和挂载点；`-f` 显示文件系统信息，`-o` 可指定 UUID、PARTUUID 等列。',['lsblk -f','lsblk -o NAME,FSTYPE,UUID,PARTUUID,MOUNTPOINT'],'磁盘 分区 设备 UUID 分区UUID 文件系统UUID 块设备',0],
+  ['UUID 与标识','blkid','blkid [选项] [设备]','查看块设备的文件系统类型、UUID、PARTUUID 和标签。默认列出所有可识别设备；`-s UUID` 只筛选 UUID 标签，`-o value` 只输出值，`-p` 绕过缓存直接探测。',['sudo blkid','sudo blkid -s UUID -o value /dev/sda1','sudo blkid -s UUID -s TYPE /dev/sda1','sudo blkid -p /dev/sda1'],'磁盘uuid 磁盘 UUID 文件系统 UUID 分区uuid PARTUUID blkid 设备 标签 缓存',0],
+  ['磁盘与归档','fdisk','fdisk -l|-x [设备]','列出磁盘分区表；`-x` 提供更多细节（不同版本可能包含 UUID/PARTUUID），查看时不要进入交互式修改。',['sudo fdisk -l','sudo fdisk -x /dev/sda'],'磁盘 分区 查看 GPT UUID 分区UUID 分区表',0],
+  ['磁盘与归档','findmnt','findmnt [选项]','查看当前挂载点和文件系统；`-o` 可显示 UUID，`-S "UUID=<UUID>"` 可按 UUID 查找挂载点。',['findmnt','findmnt -o TARGET,SOURCE,FSTYPE,UUID','findmnt -S "UUID=<UUID>"'],'挂载 mount 文件系统 UUID 文件系统UUID 磁盘UUID 挂载点',0],
+  ['磁盘与归档','mount','mount [设备] [挂载点]','查看挂载信息或挂载文件系统；可用 `UUID="<UUID>"` 按 UUID 挂载，挂载选项会影响证据或数据状态。',['findmnt','sudo mount -o ro /dev/loop0p1 /mnt/evidence','sudo mount -o ro UUID="<UUID>" /mnt/evidence'],'挂载 只读 磁盘镜像 UUID 按UUID挂载 文件系统',1],
   ['磁盘与归档','umount','umount 挂载点','卸载文件系统；可能触发待写数据回写，应确认目标设备和使用状态。',['sudo umount /mnt/evidence'],'卸载 磁盘',1],
   ['磁盘与归档','losetup','losetup [选项] 镜像','查询或关联回环设备；`--read-only` 让关联只读，但不自动挂载分区。',['sudo losetup --find --show --read-only disk.img','losetup -a'],'镜像 回环设备 只读',1],
   ['磁盘与归档','dd','dd if=输入 of=输出 [选项]','按字节复制数据；输入输出写反可能覆盖目标，使用前反复核对设备名。',['dd if=/dev/loop0 of=/analysis/disk-copy.img bs=4M status=progress'],'镜像 复制 块设备 取证',1],
   ['磁盘与归档','mount 只读镜像','mount -o ro,noload 设备 挂载点','在支持该选项的 ext 文件系统上只读挂载且不回放日志；选项依文件系统而异。',['sudo mount -o ro,noload /dev/loop0p1 /mnt/evidence'],'只读 挂载 取证 文件系统',1],
   ['磁盘与归档','e2fsck','e2fsck -n 设备','对 ext 文件系统以只读方式检查并对修复问题回答否；勿对已挂载原件执行写入修复。',['sudo e2fsck -n /dev/loop0p1'],'文件系统 检查 ext 修复',0],
-  ['磁盘与归档','tar','tar [操作] [选项] 归档 文件','创建、解包或列出 tar 归档；`-t` 只列出内容，解包前检查路径。',['tar -tzf backup.tar.gz','tar -czf site.tar.gz /var/www/site'],'压缩 打包 解压 列表',1],
-  ['磁盘与归档','zip','zip [选项] 归档 文件','创建 ZIP 压缩包；`-r` 递归加入目录。',['zip -r site.zip /var/www/site'],'zip 压缩 文件夹',1],
-  ['磁盘与归档','unzip','unzip [选项] 归档','解压 ZIP；`-l` 只查看目录清单，`-d` 指定解压位置。',['unzip -l file.zip','unzip file.zip -d /tmp/unpack'],'zip 解压 查看内容',1],
-  ['磁盘与归档','gzip','gzip [选项] 文件','压缩单个文件；默认会移除原文件，`-k` 保留原文件。',['gzip -k access.log','gzip -dk access.log.gz'],'gzip 压缩 解压 保留',1],
+  ['磁盘与归档','tar','tar [操作] [选项] 归档 文件','创建、解包或列出 tar 归档；`-t` 只列出内容，`-C` 指定解包目录，解包前检查路径。',['tar -cvf files.tar dir/','tar -czf site.tar.gz /var/www/site','tar -xzf site.tar.gz -C /tmp/restore','tar -tzf backup.tar.gz','tar -cjf files.tar.bz2 dir/','tar -xjf files.tar.bz2','tar -cJf archive.tar.xz /srv','tar -xJf archive.tar.xz'],'压缩 打包 解压 列表 tar.gz tar.bz2 tar.xz bzip2',1],
+  ['磁盘与归档','zip','zip [选项] 归档 文件','创建 ZIP 压缩包；`-r` 递归加入目录，可一次加入多个文件。',['zip -r site.zip /var/www/site','zip files.zip file1 file2'],'zip 压缩 文件夹 多文件',1],
+  ['磁盘与归档','unzip','unzip [选项] 归档','解压 ZIP；`-l` 只查看目录清单，`-d` 指定解压位置。',['unzip file.zip','unzip -l file.zip','unzip file.zip -d /tmp/unpack'],'zip 解压 查看内容',1],
+  ['磁盘与归档','gzip','gzip [选项] 文件','压缩单个文件；默认会移除原文件，`-k` 保留原文件，`-d` 解压。`gunzip` 是 `gzip -d` 的常见写法。',['gzip access.log','gzip -k access.log','gzip -d access.log.gz','gzip -dk access.log.gz','gunzip access.log.gz'],'gzip gunzip 压缩 解压 保留',1],
   ['磁盘与归档','rsync','rsync [选项] 来源 目标','同步目录或文件；加 `--delete` 会删除目标中多余内容。',['rsync -aHAX --numeric-ids /source/ /copy/'],'同步 备份 复制',1],
 
   // Logs and packages
@@ -134,23 +134,7 @@ window.LINUX_COMMANDS = [
   ['日志与软件包','apt-cache policy','apt-cache policy 软件包','查询软件包候选版本和软件源优先级。',['apt-cache policy nginx'],'软件包 版本 源',0],
 
   // Docker and panels
-  ['容器与面板','docker ps','docker ps [选项]','查看运行中的容器；`-a` 同时显示已停止容器。',['docker ps','docker ps -a'],'Docker 容器 列表',0],
-  ['容器与面板','docker logs','docker logs [选项] 容器','查看容器标准输出日志；`-f` 跟踪，`--tail` 限制行数。',['docker logs --tail 100 web','docker logs -f web'],'Docker 日志 容器',0],
-  ['容器与面板','docker inspect','docker inspect 对象','查看容器、镜像或网络的详细配置，包括挂载和网络信息。',['docker inspect web'],'Docker 配置 网络 挂载',0],
-  ['容器与面板','docker exec','docker exec [选项] 容器 命令','在运行中的容器内执行命令；容器内更改可能影响线上服务。',['docker exec -it web /bin/sh'],'Docker 进入容器 shell',1],
-  ['容器与面板','docker stats','docker stats [容器]','实时查看容器 CPU、内存、网络和块 I/O 统计。',['docker stats'],'Docker 性能 资源',0],
-  ['容器与面板','docker compose ps','docker compose ps','查看 Compose 项目服务及容器状态。',['docker compose ps'],'Docker Compose 状态',0],
-  ['容器与面板','docker compose logs','docker compose logs [选项] [服务]','查看 Compose 服务日志；`-f` 实时跟踪。',['docker compose logs --tail 100 web','docker compose logs -f'],'Docker Compose 日志',0],
-  ['容器与面板','docker compose up','docker compose up -d','创建并启动 Compose 定义的服务，可能拉取镜像或变更容器。',['docker compose up -d'],'Docker Compose 启动',1],
-  ['容器与面板','docker compose down','docker compose down','停止并移除 Compose 创建的容器和网络；卷通常保留，慎用 `-v`。',['docker compose down'],'Docker Compose 停止 删除',1],
-  ['容器与面板','docker system prune','docker system prune [选项]','清理未使用的 Docker 资源；可能删除未使用镜像或构建缓存。',['docker system df','docker system prune'],'Docker 清理 空间',1],
-  ['容器与面板','nginx -t','nginx -t','检查 Nginx 配置语法和文件引用，不会应用配置。',['sudo nginx -t'],'Nginx 配置 检查',0],
-  ['容器与面板','nginx -s reload','nginx -s reload','通知 Nginx 重新加载配置；执行前先通过 `nginx -t` 检查。',['sudo nginx -t && sudo nginx -s reload'],'Nginx 重载 服务',1],
-  ['容器与面板','apachectl configtest','apachectl configtest','检查 Apache 配置语法，不会启动或重新加载服务。',['sudo apachectl configtest'],'Apache 配置 检查',0],
   ['容器与面板','clpctl','clpctl [命令]','CloudPanel 管理 CLI；先用 `help` 查看本机版本支持的操作。',['sudo clpctl help','sudo clpctl cloudpanel:info'],'CloudPanel 面板',0],
-  ['容器与面板','1pctl status','1pctl status','查看 1Panel 服务状态；该命令仅适用于安装了对应面板的主机。',['sudo 1pctl status'],'1Panel 状态 面板',0],
-  ['容器与面板','1pctl user-info','1pctl user-info','查看 1Panel 登录入口和用户信息；输出可能含敏感数据。',['sudo 1pctl user-info'],'1Panel 账号 登录 面板',0],
-  ['容器与面板','bt','bt [编号]','宝塔面板命令行菜单。不同版本编号可能变化，先核对版本和菜单说明。',['sudo bt'],'宝塔 BT 面板',1],
   ['容器与面板','openstack','openstack [资源] [操作]','OpenStack 客户端；`list/show` 查询资源，`create/delete` 会改变云资源。',['openstack server list','openstack server show NAME'],'OpenStack 云平台',1]
 ].map((row, index) => {
   const [category, name, syntax, description, examples, keywords, changes] = row;

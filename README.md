@@ -22,7 +22,7 @@
 | <img src="assets/icons/signature.svg" width="20" alt=""> [文件格式速查](signatures/index.html) · <img src="assets/icons/hex-viewer.svg" width="20" alt=""> [十六进制查看器](hex-viewer/index.html) · <img src="assets/icons/metadata-viewer.svg" width="20" alt=""> [元数据查看](metadata-viewer/index.html) · <img src="assets/icons/file-disguise.svg" width="20" alt=""> [文件伪装分析](file-disguise/index.html)<br><br><img src="assets/icons/image-fix.svg" width="20" alt=""> [图片尺寸修复](image-fix/index.html) · <img src="assets/icons/exe-analysis.svg" width="20" alt=""> [EXE 静态分析](exe-analysis/index.html) · <img src="assets/icons/ca-certificate.svg" width="20" alt=""> [CA 证书分析](ca-certificate/index.html) | <img src="assets/icons/apk-file.svg" width="20" alt=""> [APK 元数据解析](apk/index.html) · <img src="assets/icons/qr.svg" width="20" alt=""> [二维码识别](qr-reader/index.html) |
 | 数据处理 | 资料检索 |
 |:--|:--|
-| <img src="assets/icons/phone-lookup.svg" width="20" alt=""> [手机号归属地](phone-lookup/index.html) · <img src="assets/icons/base64.svg" width="20" alt=""> [Base64 编解码](base64/index.html) · <img src="assets/icons/timestamp.svg" width="20" alt=""> [时间戳转换](timestamp/index.html) · <img src="assets/icons/md5.svg" width="20" alt=""> [密文字典匹配](ciphertext/index.html) | <img src="assets/icons/linux-terminal.svg" width="20" alt=""> [Linux 指令检索](linux/index.html) · <img src="assets/icons/code-commands.svg" width="20" alt=""> [代码指令检索](code-commands/index.html) · <img src="assets/icons/windows.svg" width="20" alt=""> [Windows 配置指南](windows/index.html) |
+| <img src="assets/icons/phone-lookup.svg" width="20" alt=""> [手机号归属地](phone-lookup/index.html) · <img src="assets/icons/base64.svg" width="20" alt=""> [Base64 编解码](base64/index.html) · <img src="assets/icons/image-base64.svg" width="20" alt=""> [图片 Base64](image-base64/index.html) · <img src="assets/icons/timestamp.svg" width="20" alt=""> [时间戳转换](timestamp/index.html) · <img src="assets/icons/md5.svg" width="20" alt=""> [密文字典匹配](ciphertext/index.html) | <img src="assets/icons/linux-terminal.svg" width="20" alt=""> [Linux 指令检索](linux/index.html) · <img src="assets/icons/code-commands.svg" width="20" alt=""> [代码指令检索](code-commands/index.html) · <img src="assets/icons/windows.svg" width="20" alt=""> [Windows 配置指南](windows/index.html) |
 
 ## 🚀 快速启动
 
@@ -52,6 +52,10 @@
 隐写初筛统计 PNG 解压像素和 PCM WAV 样本的低位分布。统计异常可能由正常的嵌套容器或数据造成，不能单独证明文件含有隐写内容。JPEG 系数和压缩音视频帧需要专用工具进一步分析。
 
 新增或改造工具应遵循 [工具设计规范](docs/TOOL_DESIGN_SPEC.md)，特别是证据边界、偏移记录、资源上限、可访问状态反馈和非破坏性处理约定。
+
+### 图片 Base64 转换
+
+页面位于 `image-base64/`，支持图片转 Base64/Data URL，以及把 Base64 文本还原为图片。编码只读取原始文件字节，不重新压缩或转码像素；解码按文件头识别 PNG、JPEG、GIF、WebP、BMP、ICO、TIFF、AVIF、HEIC 和 SVG，并在 Data URL 声明类型与实际格式不一致时提示。Base64、Data URL 和带换行/空白的输入均可解析；单张图片和解码结果上限为 32 MiB，Base64 输入上限约 5000 万字符。工具可复制或下载文本，也可下载还原后的图片副本；Base64 只是编码，不提供加密保护。
 
 ### EXE 静态分析
 
@@ -88,7 +92,7 @@ CA 证书分析位于 `ca-certificate/`，可粘贴单张或多张 PEM `CERTIFIC
 
 ### Linux 指令检索
 
-命令按用途分类，支持按命令名、中文关键词、近似拼写、配置路径和示例搜索，也可复制示例。离线数据位于 linux/data.js、linux/supplement.js 和 linux/paths.js。命令条目优先链接菜鸟教程；没有对应页面时链接官方文档或手册页。页面也介绍 Linux 关键目录与配置文件的用途和维护方式。菜鸟教程中的低频命令经过筛选；《Tutorial.md》中的命令和示例均已纳入索引。
+命令按用途分类，支持按命令名、中文关键词、近似拼写、配置路径和示例搜索，也可复制示例。离线数据位于 linux/data.js、linux/supplement.js 和 linux/paths.js。命令条目优先链接菜鸟教程；没有对应页面时链接官方文档或手册页。页面也介绍 Linux 关键目录与配置文件的用途和维护方式。索引包含磁盘/分区 UUID、SMBIOS/DMI 硬件 UUID、LUKS/LVM/RAID/Btrfs 标识、machine-id 的读取与 UUID 生成/解析命令，以及 MD5、SHA-1、SHA-224、SHA-256、SHA-384、SHA-512、BLAKE2 等摘要计算与校验命令；并补充硬件信息、登录审计、SELinux/AppArmor、防火墙、权限能力与性能排查命令。菜鸟教程中的低频命令经过筛选；《Tutorial.md》中的命令和示例均已纳入索引。
 
 ## 隐私与联网
 

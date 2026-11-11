@@ -24,6 +24,9 @@
 
   function getFacet(item) {
     const name = item.name.toLowerCase();
+    if (item.category === 'UUID 与标识' || item.category === '哈希与校验') {
+      return { collection: '标识与校验', subcollection: item.category };
+    }
     if (item.category === '关键目录与配置') {
       const isConfig = /^\/etc\//.test(name) || /(?:compose\.ya?ml|docker-compose\.yml|\.bashrc|\.profile)/.test(name);
       return { collection: '系统目录与配置', subcollection: isConfig ? '配置文件' : '系统目录' };

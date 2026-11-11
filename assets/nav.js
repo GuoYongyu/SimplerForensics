@@ -16,6 +16,7 @@
     ['数据处理', [
       ['手机号归属地', 'phone-lookup.svg', '../phone-lookup/index.html'],
       ['Base64', 'base64.svg', '../base64/index.html'],
+      ['图片 Base64', 'image-base64.svg', '../image-base64/index.html'],
       ['时间戳', 'timestamp.svg', '../timestamp/index.html'],
       ['密文字典匹配', 'md5.svg', '../ciphertext/index.html'],
     ]],
