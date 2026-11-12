@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08111f">
   <title>手机号归属地查询 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
-  <link rel="stylesheet" href="style.css?v=20261031-1">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
+  <link rel="stylesheet" href="style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
   <script defer src="data/phone-data.js?v=202605"></script>
   <script defer src="app.js?v=20261031-3"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
 </head>
 <body>
   <header class="topbar">
@@ -71,7 +72,7 @@
       <div class="table-wrap"><table class="phone-table invalid-phone-table"><thead><tr><th>原始内容</th><th>来源</th><th>所在行 / 上下文</th></tr></thead><tbody id="invalid-rows"></tbody></table></div>
     </section>
 
-    <details class="panel phone-notes"><summary>数据来源、范围与识别说明</summary><div class="phone-notes-body">
+    <details class="panel phone-notes reference-note"><summary>数据来源、范围与识别说明</summary><div class="phone-notes-body">
       <p>归属地库为项目随附的本地数据库，采用 jieeit/phone 开源项目发布的数据（MIT），共约 52 万条号段记录，数据截至 2026 年 5 月；许可证文本见 phone-lookup/data/LICENSE-MIT.txt。号码只在当前浏览器内存中处理；导入文件不会保存，导出仅在点击“导出 CSV”后生成。</p>
       <p>归属地代表号段登记地，不是号码持有人当前位置；携号转网后当前实际运营商可能与号段数据不同。未命中号码会标记为“暂无号段记录”。</p>
       <p>支持格式按已发现的文件容器和文本内容解析。普通文本、联系人、表格及 Office Open XML 文档会尽可能结构化读取；SQLite / Access / PDF / 压缩档等格式采用可读文本扫描，压缩字段、二进制页或加密内容无法保证提取完整。超大或不完整文件可能显示部分结果。</p>

@@ -2,26 +2,21 @@
 .image-b64-layout[hidden],
 #decode-result[hidden],
 .b64-preview[hidden] {
-  display: none !important;
-}
+  display: none !important}
 
 .image-b64-layout {
   align-items: start;
-  margin-top: 18px;
-}
+  margin-top: 18px}
 
 .image-b64-layout.is-single {
-  grid-template-columns: minmax(0, 1fr);
-}
+  grid-template-columns: minmax(0, 1fr)}
 
 .image-b64-column {
-  min-width: 0;
-}
+  min-width: 0}
 
 .image-b64-column .image-preview {
   max-height: 360px;
-  margin: 14px auto;
-}
+  margin: 14px auto}
 
 .b64-options {
   display: flex;
@@ -31,62 +26,51 @@
   padding: 12px 14px;
   border: 1px solid #e5ebf2;
   border-radius: 10px;
-  background: #f9fbfd;
-}
+  background: #f9fbfd}
 
 .b64-output,
 .b64-input {
   min-height: 300px;
-  line-height: 1.6;
-  font-size: 13px;
-}
+  line-height: 1.6}
 
 .b64-output {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  word-break: break-all;
-}
+  word-break: break-all}
 
 .b64-input {
-  margin-top: 0;
-}
+  margin-top: 0}
 
 .b64-input.is-dragover {
   border-color: #5c91e8;
   background: #f7faff;
-  box-shadow: 0 0 0 3px #2864e817;
-}
+  box-shadow: 0 0 0 3px #2864e817}
 
 .b64-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
-  margin-top: 12px;
-}
+  margin-top: 12px}
 
 .b64-info-item {
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid #e5ebf2;
   border-radius: 9px;
-  background: #f9fbfd;
-}
+  background: #f9fbfd}
 
 .b64-info-item span {
   display: block;
   margin-bottom: 5px;
-  color: #8290a2;
-  font-size: 12px;
-}
+  color: #8290a2}
 
 .b64-info-item strong {
   display: block;
   color: #263b56;
-  font-size: 13px;
+  ;
   line-height: 1.6;
   overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
+  white-space: pre-wrap}
 
 .b64-preview-note {
   margin: 10px 0 0;
@@ -94,38 +78,30 @@
   border: 1px solid #f0e5c9;
   border-radius: 9px;
   background: #fff8e9;
-  color: #866a2e;
-}
+  color: #866a2e}
 
 .image-b64-status {
   margin-top: 14px;
-  white-space: pre-wrap;
-}
+  white-space: pre-wrap}
 
 .b64-boundary {
   margin: 0;
-  padding-left: 20px;
-}
+  padding-left: 20px}
 
 .b64-boundary li {
-  margin: 8px 0;
-}
+  margin: 8px 0}
 
 .image-b64-column .button-row {
-  margin-top: 14px;
-}
+  margin-top: 14px}
 
 @media (max-width: 760px) {
   .b64-info-grid {
-    grid-template-columns: 1fr;
-  }
+    grid-template-columns: 1fr}
 
   .image-b64-column .image-preview {
-    max-height: 280px;
-  }
+    max-height: 280px}
 
   .b64-output,
   .b64-input {
-    min-height: 240px;
-  }
+    min-height: 240px}
 }

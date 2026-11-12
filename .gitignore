@@ -15,3 +15,4 @@ Desktop.ini
 
 # Test used files
 /test/*
+!/test/die-engine.test.cjs

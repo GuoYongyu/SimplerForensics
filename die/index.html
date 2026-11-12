@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>DIE 查壳识别 · SimplerForensics</title>
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-7">
+  <link rel="stylesheet" href="style.css?v=20261112-7">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
+  <script defer src="app.js?v=20261112-7"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 离线 · 签名库内置</span></header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>DIE 查壳识别</span></div>
+    <section class="page-heading">
+      <div>
+        <p class="kicker">07 / SIGNATURE ENGINE</p>
+        <h1>DIE 查壳识别</h1>
+        <p>在浏览器内运行 Detect It Easy（DiE-JS）PE 签名库，识别壳、保护器、编译器与工具链，并整理取证与 CTF 常看的 PE 字段。</p>
+      </div>
+      <span class="chip">不运行样本</span>
+    </section>
+
+    <section class="panel">
+      <div class="drop-zone" id="drop">
+        <strong>拖动 EXE / DLL / SYS 到这里，或选择本地文件</strong>
+        <span class="hint">支持 PE32 / PE32+；单文件上限 128 MiB。签名库与解析器都在当前页面运行，文件不会上传、写入或执行。</span>
+        <input class="file-input" id="file" type="file" accept=".exe,.dll,.sys,.ocx,.scr,.cpl,.node,application/vnd.microsoft.portable-executable">
+      </div>
+      <div class="button-row">
+        <button class="btn btn-danger" id="cancel" type="button" disabled>取消分析</button>
+        <button class="btn" id="clear" type="button">清空结果</button>
+        <button class="btn" id="export-json" type="button" disabled>导出 JSON 报告</button>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite">正在加载内置 DiE 签名库…</div>
+      <div class="progress-wrap" id="progress-wrap" hidden><progress id="progress" max="100" value="0"></progress><span id="progress-label"></span></div>
+      <p class="hint die-db-note" id="db-status">签名库来自 Detect It Easy 的 DiE-JS PE 规则，随页面离线加载，不会联网更新。</p>
+    </section>
+
+    <section id="results" hidden>
+      <section class="panel">
+        <div class="result-heading">
+          <div><p class="kicker">OVERVIEW</p><h2 id="file-name"></h2></div>
+          <span class="chip" id="analysis-time"></span>
+        </div>
+        <div class="die-stats" id="summary"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <div><p class="kicker">DETECT IT EASY</p><h2>DIE 识别结果</h2></div>
+          <span class="chip" id="result-count"></span>
+        </div>
+        <p class="hint">结果是 DIE 签名库对静态特征的匹配，不代表样本行为或安全结论。未命中不等于没有加壳。</p>
+        <div id="die-results" class="die-result-grid"></div>
+        <div id="die-empty"></div>
+        <div id="die-language" class="die-language"></div>
+        <details class="die-discovery" id="die-stats-details">
+          <summary>签名库执行情况</summary>
+          <div id="die-stats-info"></div>
+        </details>
+      </section>
+
+      <details class="panel die-disclosure" open>
+        <summary><span>取证速览与文件摘要</span></summary>
+        <div class="disclosure-body">
+          <div class="die-stats" id="facts"></div>
+          <h3 class="die-subheading">密码学摘要</h3>
+          <div id="hashes" class="hash-list"></div>
+          <p id="hash-note" class="status warning" hidden></p>
+          <h3 class="die-subheading">加壳与异常线索</h3>
+          <p class="hint">这些是结构启发式线索，用于解释和复核 DIE 结果；它们本身不能证明样本被加壳或恶意。</p>
+          <div id="clues" class="die-clue-list"></div>
+          <div id="rich-wrap" hidden>
+            <h3 class="die-subheading">Rich Header</h3>
+            <p class="hint" id="rich-note"></p>
+            <div class="table-wrap"><table><thead><tr><th>#</th><th>Product ID</th><th>Build</th><th>使用次数</th></tr></thead><tbody id="rich"></tbody></table></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="panel die-disclosure">
+        <summary><span>节区、熵与入口点</span></summary>
+        <div class="disclosure-body">
+          <div class="die-stats die-stats-compact" id="ep-facts"></div>
+          <p class="hint">入口点字节是文件偏移处的原始十六进制；熵接近 8 bits/byte 通常表示压缩或加密数据，也可能只是正常的高熵资源。</p>
+          <div class="table-wrap">
+            <table class="die-table">
+              <thead><tr><th>节区</th><th>RVA</th><th>文件偏移</th><th>虚拟 / 原始大小</th><th>权限</th><th>熵</th></tr></thead>
+              <tbody id="sections"></tbody>
+            </table>
+          </div>
+          <div id="overlay-wrap" hidden>
+            <h3 class="die-subheading">叠加数据（Overlay）</h3>
+            <div class="die-overlay" id="overlay"></div>
+            <div id="overlay-strings" class="die-overlay-strings"></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="panel die-disclosure">
+        <summary><span>导入与导出</span></summary>
+        <div class="disclosure-body">
+          <p class="hint">导入表表示文件声明使用的外部函数，导出表表示它对其他模块公开的符号；两者都不代表运行时一定调用或被调用。</p>
+          <div class="die-inline-search">
+            <label class="field-label" for="import-filter">筛选导入函数</label>
+            <input class="field" id="import-filter" type="search" placeholder="输入 DLL 或函数名，例如 kernel32、VirtualProtect" autocomplete="off">
+            <span class="chip" id="import-count"></span>
+          </div>
+          <div class="table-wrap die-table-wrap"><table class="die-table"><thead><tr><th>DLL</th><th>函数</th></tr></thead><tbody id="imports"></tbody></table></div>
+          <p class="hint" id="import-note"></p>
+          <h3 class="die-subheading">导出函数</h3>
+          <p class="hint" id="export-count"></p>
+          <div class="table-wrap die-table-wrap"><table class="die-table"><thead><tr><th>序号</th><th>函数</th><th>RVA</th></tr></thead><tbody id="exports"></tbody></table></div>
+        </div>
+      </details>
+
+      <details class="panel die-disclosure">
+        <summary><span>资源、版本信息与 Manifest</span></summary>
+        <div class="disclosure-body">
+          <p class="hint" id="version-note">版本资源中的字段由构建者写入，可能被修改；它们不是可信的来源证明。</p>
+          <div class="die-version-grid" id="version-info"></div>
+          <div id="manifest-wrap" hidden>
+            <h3 class="die-subheading">嵌入的 Manifest</h3>
+            <pre class="die-pre" id="manifest"></pre>
+          </div>
+          <h3 class="die-subheading">资源条目</h3>
+          <p class="hint" id="resource-count"></p>
+          <div class="table-wrap die-table-wrap"><table class="die-table"><thead><tr><th>类型</th><th>名称 / ID</th><th>语言</th><th>文件偏移</th><th>大小</th></tr></thead><tbody id="resources"></tbody></table></div>
+        </div>
+      </details>
+
+      <details class="panel die-disclosure">
+        <summary><span>字符串与 Flag 线索</span></summary>
+        <div class="disclosure-body">
+          <p class="hint">提取可见 ASCII 与 UTF-16LE 字符串，并按 Flag、URL、IP、注册表、路径等模式归类。命中只表示文件里存在相应文本，不证明程序会使用它。</p>
+          <div id="findings" class="die-findings"></div>
+          <div class="die-inline-search">
+            <label class="field-label" for="string-filter">筛选字符串</label>
+            <input class="field" id="string-filter" type="search" placeholder="搜索 flag、http、注册表路径或任意文本" autocomplete="off">
+            <span class="chip" id="string-count"></span>
+          </div>
+          <div class="table-wrap die-table-wrap die-string-wrap"><table class="die-table"><thead><tr><th>偏移</th><th>编码</th><th>字符串</th></tr></thead><tbody id="strings"></tbody></table></div>
+          <p class="hint" id="string-note"></p>
+        </div>
+      </details>
+
+      <details class="panel die-disclosure">
+        <summary><span>规则库覆盖与限制</span></summary>
+        <div class="disclosure-body">
+          <div id="coverage" class="die-stats die-stats-compact"></div>
+          <div id="coverage-notes"></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel reference-note">
+      <h2>适用范围与检测边界</h2>
+      <ul class="hint die-notes">
+        <li>本页执行的是 Detect It Easy 的 DiE-JS PE 规则，但不是完整的 DIE 客户端：依赖原生反汇编、IL 方法体模拟、泛型启发式引擎或外部文件读取的规则会被跳过，并在“规则库覆盖与限制”中列出。</li>
+        <li>签名匹配对规则版本敏感。识别到 UPX、VMProtect 等名称说明静态特征相符，不代表已成功脱壳，也不代表样本一定带有对应保护。</li>
+        <li>PE 时间戳、版本资源、Rich Header 和 PDB 路径都可以被构造或修改；它们只能作为线索，不能单独证明编译时间、来源或作者。</li>
+        <li>页面不执行样本、不加载远程脚本、不查询在线信誉服务，也不验证 Authenticode 签名链、证书有效期或吊销状态。</li>
+        <li>加壳、混淆、运行时解密和网络下发的内容无法通过静态签名完整还原；未命中规则不代表文件安全。</li>
+      </ul>
+    </section>
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body>
+</html>

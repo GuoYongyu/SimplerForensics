@@ -19,7 +19,7 @@
 
 | 文件分析 | 移动与媒体 |
 |:--|:--|
-| <img src="assets/icons/signature.svg" width="20" alt=""> [文件格式速查](signatures/index.html) · <img src="assets/icons/hex-viewer.svg" width="20" alt=""> [十六进制查看器](hex-viewer/index.html) · <img src="assets/icons/metadata-viewer.svg" width="20" alt=""> [元数据查看](metadata-viewer/index.html) · <img src="assets/icons/file-disguise.svg" width="20" alt=""> [文件伪装分析](file-disguise/index.html)<br><br><img src="assets/icons/image-fix.svg" width="20" alt=""> [图片尺寸修复](image-fix/index.html) · <img src="assets/icons/exe-analysis.svg" width="20" alt=""> [EXE 静态分析](exe-analysis/index.html) · <img src="assets/icons/ca-certificate.svg" width="20" alt=""> [CA 证书分析](ca-certificate/index.html) | <img src="assets/icons/apk-file.svg" width="20" alt=""> [APK 元数据解析](apk/index.html) · <img src="assets/icons/qr.svg" width="20" alt=""> [二维码识别](qr-reader/index.html) |
+| <img src="assets/icons/signature.svg" width="20" alt=""> [文件格式速查](signatures/index.html) · <img src="assets/icons/hex-viewer.svg" width="20" alt=""> [十六进制查看器](hex-viewer/index.html) · <img src="assets/icons/metadata-viewer.svg" width="20" alt=""> [元数据查看](metadata-viewer/index.html) · <img src="assets/icons/file-disguise.svg" width="20" alt=""> [文件伪装分析](file-disguise/index.html)<br><br><img src="assets/icons/image-fix.svg" width="20" alt=""> [图片尺寸修复](image-fix/index.html) · <img src="assets/icons/exe-analysis.svg" width="20" alt=""> [EXE 静态分析](exe-analysis/index.html) · <img src="assets/icons/die.svg" width="20" alt=""> [DIE 查壳识别](die/index.html) · <img src="assets/icons/ca-certificate.svg" width="20" alt=""> [CA 证书分析](ca-certificate/index.html) | <img src="assets/icons/apk-file.svg" width="20" alt=""> [APK 元数据解析](apk/index.html) · <img src="assets/icons/qr.svg" width="20" alt=""> [二维码识别](qr-reader/index.html) |
 | 数据处理 | 资料检索 |
 |:--|:--|
 | <img src="assets/icons/phone-lookup.svg" width="20" alt=""> [手机号归属地](phone-lookup/index.html) · <img src="assets/icons/base64.svg" width="20" alt=""> [Base64 编解码](base64/index.html) · <img src="assets/icons/image-base64.svg" width="20" alt=""> [图片 Base64](image-base64/index.html) · <img src="assets/icons/timestamp.svg" width="20" alt=""> [时间戳转换](timestamp/index.html) · <img src="assets/icons/md5.svg" width="20" alt=""> [密文字典匹配](ciphertext/index.html) | <img src="assets/icons/linux-terminal.svg" width="20" alt=""> [Linux 指令检索](linux/index.html) · <img src="assets/icons/code-commands.svg" width="20" alt=""> [代码指令检索](code-commands/index.html) · <img src="assets/icons/windows.svg" width="20" alt=""> [Windows 配置指南](windows/index.html) |
@@ -62,6 +62,34 @@
 EXE 静态分析页面位于 exe-analysis/。支持本地计算 MD5、SHA-1、SHA-256、SHA-384 和 SHA-512，解析 PE32/PE32+ 头部、节区、导入/导出表和常见结构异常，基于 PE 元数据、运行时标记和可见字符串推测编程语言与工具链，并提取 ASCII/UTF-16LE 字符串、筛选 URL/IP/注册表路径线索、扫描内置静态规则，并可导入本地 JSON 文本规则。文件在浏览器 Web Worker 中处理，不执行样本、不上传文件、不调用在线信誉、扫描或规则服务；报告只有在用户点击导出后才下载为 JSON。
 
 语言和编译器判断、结构提示及规则命中均为静态线索，可能误报或漏报。PE 时间戳不应视为可信编译时间；字符串命中不证明对应行为发生；未命中规则也不代表文件安全。首版单文件上限为 128 MiB，规则扫描使用内置特征和可选本地 JSON 文本规则，不等同于完整 YARA 引擎；规则格式示例见 exe-analysis/rules-example.json。
+
+### DIE 查壳识别
+
+DIE 查壳识别页面位于 `die/`。它把 Detect It Easy 的 DiE-JS **PE 签名库**（1,034 条规则）和浏览器内的 PE 解析器放进本地 Web Worker，在不上传、不执行样本的前提下识别压缩壳、保护器、加密器、编译器、链接器和安装器等特征。页面不需要安装 DIE 或 `diec`，Windows 与 macOS 都只需通过本机启动脚本打开页面，签名库随仓库离线提供。
+
+页面在 DIE 结果之外，还汇总了 CTF 逆向和电子数据取证中常看的静态字段：
+
+- **文件与结构**：PE32/PE32+、x86/x64/ARM64、EXE/DLL/驱动、子系统、链接器版本、PE 时间戳、ImageBase、对齐参数。
+- **查壳与工具链**：DIE 规则命中的壳/保护器/加密器、编译器、链接器和运行库；语言线索单独标注。
+- **入口点与节区**：入口点 RVA/文件偏移/所在节区/EP 十六进制、节区权限、虚拟/原始大小、熵、W+X 与异常节名提示。
+- **导入与导出**：DLL/函数清单、导入哈希、命名导出；支持本地筛选。
+- **资源与版本**：RT_VERSION 字符串、VS_FIXEDFILEINFO、RT_MANIFEST 预览、资源类型/名称/语言/偏移/大小。
+- **附加数据**：Overlay 起点、大小、前 64 字节和可读字符串。
+- **调试与签名**：PDB/CodeView、Rich Header、TLS 目录、Authenticode 存在性与大小（不验证签名链）。
+- **.NET**：CLI 版本、模块名、类型/方法计数，以及 DIE 的 .NET 规则结果。
+- **字符串线索**：ASCII/UTF-16LE 提取，按 Flag、口令、URL、IP、注册表、路径、邮箱、PDB、UPX 标记和 Base64 长串归类。
+
+结果区分“直接读取的字段”“计算/解析值”和“签名/正则启发式”。签名库固定随页面发布，运行时不联网；规则覆盖情况和未实现的 API 会在页面中列出。依赖原生反汇编、IL 方法体模拟或相邻文件读取的规则会被跳过，因此本页不是完整 DIE 客户端，不能替代脱壳、动态调试或在线信誉查询。
+
+签名库构建脚本为 `scripts/build-die-db.mjs`。它只读取本机 Detect It Easy 仓库的 `db/PE`，生成 `die/db/pe-signatures.json`：
+
+```sh
+node scripts/build-die-db.mjs /path/to/Detect-It-Easy
+```
+
+可运行 `node test/die-engine.test.cjs` 执行解析与规则执行回归测试；设置环境变量 `DIE_FIXTURE` 为某个 PE 路径时，还会追加真实样本检查。调研依据与字段映射见 [docs/DIE_RESEARCH.md](docs/DIE_RESEARCH.md)。
+
+DIE 签名库来自 Detect It Easy（MIT 许可证），文本见 `die/db/DIE-LICENSE.txt`；页面只使用其公开数据库与 DiE-JS 语义，规则作者信息保留在原始 `.sg` 文本中。页面使用 Web Worker 并通过 `fetch` 读取本地签名库，因此需要通过 `launch.command`、`launch.bat` 或其他本地静态服务打开；直接双击 `die/index.html` 时，浏览器会限制 `file://` 页面加载 Worker 和 JSON。
 
 ### APK 分析与 JADX
 
@@ -107,11 +135,13 @@ CA 证书分析位于 `ca-certificate/`，可粘贴单张或多张 PEM `CERTIFIC
 
 ## 隐私与联网
 
-网页服务只绑定 127.0.0.1，不会向局域网或互联网开放。APK 结构、签名与内容清单由浏览器读取同一文件；只有 JADX 代码分析会把文件提交给本机服务。APK 文件和 JADX 生成的临时文件均在本机处理，不会上传到远程服务。除首次准备 JADX 便携运行包时从官方发行页和 Adoptium 下载文件外，其他页面不加载远程脚本、字体或 API。
+网页服务只绑定 127.0.0.1，不会向局域网或互联网开放。APK 结构、签名与内容清单由浏览器读取同一文件；只有 JADX 代码分析会把文件提交给本机服务。APK 文件和 JADX 生成的临时文件均在本机处理，不会上传到远程服务。DIE 查壳识别不调用任何本机程序，PE 字节和 DiE-JS 签名库都在浏览器 Web Worker 中处理。除首次准备 JADX 便携运行包时从官方发行页和 Adoptium 下载文件外，其他页面不加载远程脚本、字体或 API。
 
 ## 开源致谢
 
 感谢 [JADX 项目](https://github.com/skylot/jadx)的维护者和贡献者提供优秀的 Android APK 反编译工具。本项目通过 JADX 进行本机 APK 静态分析；JADX 使用 Apache-2.0 许可证。便携运行包使用 [Adoptium Temurin](https://adoptium.net/) 提供的 Java 运行时，感谢 Adoptium 社区的维护和发布。
+
+DIE 查壳识别使用 [Detect It Easy](https://github.com/horsicq/Detect-It-Easy) 的 DiE-JS PE 签名库、`db/PE/_init` 与辅助框架脚本，感谢 horsicq 及所有规则作者。Detect It Easy 采用 MIT 许可证，文本见 die/db/DIE-LICENSE.txt；原始规则中的作者注释已随签名源文本保留。
 
 二维码识别使用 [jsQR](https://github.com/cozmo/jsQR)，感谢其维护者和贡献者；项目采用 Apache-2.0 许可证，文本见 assets/vendor/jsQR-LICENSE.txt。
 

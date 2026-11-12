@@ -6,11 +6,12 @@
   <meta name="theme-color" content="#08111f">
   <title>Windows 系统配置指南 · SimplerForensics</title>
   <meta name="description" content="了解 Windows 系统目录、查看系统和硬件配置，并读懂注册表的结构、根键和值类型。">
-  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
+  <link rel="stylesheet" href="style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
   <script defer src="app.js"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
 </head>
 <body>
   <header class="topbar">
@@ -204,7 +205,7 @@ Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name Prod
         <div class="safe-item"><span>03</span><div><b>编辑前导出备份</b><p>注册表编辑器可对选中的键执行“导出”。确认备份和恢复方式后，再按可信的具体说明修改。</p></div></div>
         <div class="safe-item"><span>04</span><div><b>不要把注册表清理当作提速手段</b><p>不要批量删除“不认识”的键。错误的改动可能导致应用、驱动或 Windows 功能异常。</p></div></div>
       </div>
-      <div class="source-note"><h3>进一步阅读 · Microsoft 官方资料</h3><div class="source-links">
+      <div class="source-note reference-note"><h3>进一步阅读 · Microsoft 官方资料</h3><div class="source-links">
         <a href="https://support.microsoft.com/zh-CN/Windows/Experience/find-information-about-your-windows-device" target="_blank" rel="noopener noreferrer">查找有关 Windows 设备的信息 ↗</a>
         <a href="https://support.microsoft.com/en-gb/windows/experience/description-of-microsoft-system-information-msinfo32-exe-tool" target="_blank" rel="noopener noreferrer">系统信息工具 MSINFO32 ↗</a>
         <a href="https://learn.microsoft.com/en-us/windows/win32/sysinfo/structure-of-the-registry" target="_blank" rel="noopener noreferrer">注册表的结构 ↗</a>
@@ -252,7 +253,7 @@ Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name Prod
         <tr><td><b>TCP/IP 接口与 DHCP</b></td><td>SYSTEM hive：<code>SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\{GUID}</code></td><td>接口配置、DHCP/静态配置、DHCP 服务器、DNS 和租约相关值；有助于了解某接口曾使用的网络参数。</td><td>部分接口记录可见 <code>LeaseObtainedTime</code>、<code>LeaseTerminatesTime</code> 以及 T1/T2 续租时间；传统参数文档将租约时间记为自 1970-01-01 起的秒数。动态配置会被新租约覆盖，静态地址没有 DHCP 租期；不同版本/接口字段和表示可能不同。不能仅凭当前值重建完整网络连接时间线。</td></tr>
       </tbody></table></div><p>NetworkList 中 DateCreated / DateLastConnected 字段与注册表键 LastWriteTime 不是同一种时间；前者在常见实现中为本地时间结构，后者是 UTC FILETIME。使用解析器时核实字段格式、时区和 Windows 版本。网络配置文件也可能被用户“忘记网络”或系统管理操作删除。</p></div></details>
       <details class="windows-disclosure"><summary>取证陷阱：LastWriteTime、事务日志、清理与证据链</summary><div class="disclosure-body"><div class="registry-principles"><article><b>LastWriteTime 只锚定键的修改</b><p>它表示键最后一次被修改的时间，不会指出哪一个值发生变化，也不必然等于程序安装、首次运行、USB 插入或网络连接时间。父键和子键应分开记录并按具体 artifact 解释。</p></article><article><b>日志不是可依赖的“删除回收站”</b><p>Hive 旁的 <code>.LOG1</code> / <code>.LOG2</code> 用于注册表事务与一致性恢复，可能含主 hive 尚未合并的写入；它们不是保证保留已删除键的完整历史数据库。</p></article><article><b>主 hive 与活跃系统可能不同步</b><p>系统运行期间 hive 仍可能有缓存或未合并写入。采集时应保持证据一致性，并将主 hive 与同目录事务日志一并保存、计算哈希，再由支持日志恢复的解析器处理。</p></article><article><b>缺失与稀疏记录都要谨慎</b><p>版本差异、未启用功能、用户配置未加载、记录覆盖、清理工具和攻击者删除都可能造成空缺。稀疏本身值得进一步调查，但不能单独推出“有人清理过”。</p></article></div><p><b>示例关联：</b>USBSTOR 可协助识别设备实例，MountedDevices 提供卷/盘符映射，LNK 或 Jump List 可包含文件路径和时间，RecentDocs/ShellBags 则提供用户配置层面的补充线索。只有在用户、设备/卷标识和经过时区校正的时间线都能相互对应时，才适合提出较强解释；这些痕迹仍不能单独证明文件内容被复制或某个人实施了操作。</p></div></details>
-      <div class="source-note"><h3>历史痕迹参考资料</h3><div class="source-links">
+      <div class="source-note reference-note"><h3>历史痕迹参考资料</h3><div class="source-links">
         <a href="https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/microsoft/final/en-us/microsoft-brand/documents/IR-Guidebook-Final.pdf" target="_blank" rel="noopener noreferrer">Microsoft Incident Response：ShimCache 解释边界 ↗</a>
         <a href="https://www.justice.gov/media/876891/dl?inline=" target="_blank" rel="noopener noreferrer">美国司法部：Windows MRU 与 ShellBags ↗</a>
         <a href="https://github.com/Psmths/windows-forensic-artifacts/blob/main/execution/bam-dam.md" target="_blank" rel="noopener noreferrer">BAM / DAM 路径与版本差异 ↗</a>

@@ -7,6 +7,7 @@
       ['伪装分析', 'file-disguise.svg', '../file-disguise/index.html'],
       ['图片尺寸', 'image-fix.svg', '../image-fix/index.html'],
       ['EXE 分析', 'exe-analysis.svg', '../exe-analysis/index.html'],
+      ['DIE 查壳', 'die.svg', '../die/index.html'],
       ['CA 证书', 'ca-certificate.svg', '../ca-certificate/index.html'],
     ]],
     ['移动与媒体', [

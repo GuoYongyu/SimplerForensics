@@ -1,0 +1,1560 @@
+/* ==========================================================================
+   SimplerForensics type system
+   --------------------------------------------------------------------------
+   Authoritative typography layer for the whole site: font families, sizes,
+   weights and line-heights. Loaded last on every page so the shared hierarchy
+   wins over legacy per-page declarations.
+
+   Scale (desktop):
+     12px  micro    — eyebrow labels, indexes, footnotes, tiny badges
+     13px  meta     — chips, table headers, labels, small buttons
+     14px  caption  — hints, status, breadcrumbs, tables, code blocks
+     15px  body-sm  — card descriptions, secondary prose, buttons
+     16px  body     — default text, inputs, panel prose, section headings
+     18px  card     — card titles
+     21px  panel    — panel titles
+     clamp(23–27px)  section titles
+     clamp(32–44px)  page titles
+     clamp(40–56px)  home hero
+   ========================================================================== */
+
+:root {
+  /* Sans stack: system UI faces plus CJK sans fallbacks (never a serif/Songti). */
+  --font-sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
+    "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", sans-serif;
+
+  /* Mono stack for code. CJK sans fallbacks come before the generic monospace
+     keyword so Chinese glyphs never fall back to a Songti/serif face. */
+  --font-mono: "SFMono-Regular", "SF Mono", Menlo, Consolas, "Cascadia Mono",
+    "JetBrains Mono", "Roboto Mono", "Noto Sans Mono", "Sarasa Mono SC",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC",
+    "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", monospace;
+
+  /* Type scale */
+  --fs-hero: clamp(40px, 4.6vw, 56px);
+  --fs-page-title: clamp(32px, 3.2vw, 44px);
+  --fs-section-title: clamp(23px, 2.2vw, 27px);
+  --fs-panel-title: 21px;
+  --fs-card-title: 18px;
+  --fs-subheading: 16px;
+  --fs-body: 16px;
+  --fs-body-sm: 15px;
+  --fs-caption: 14px;
+  --fs-meta: 13px;
+  --fs-micro: 12px;
+  --fs-code: 14px;
+  --fs-code-sm: 13px;
+  --fs-code-micro: 12px;
+
+  /* Line heights */
+  --lh-title: 1.15;
+  --lh-tight: 1.3;
+  --lh-snug: 1.5;
+  --lh-body: 1.75;
+  --lh-code: 1.7;
+
+  /* Weights */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Reference / usage / source note palette */
+  --note-surface: #f8fafd;
+  --note-border: #e3eaf3;
+  --note-heading: #334a66;
+  --note-text: #5b6e85;
+  --note-link: #3560a8;
+  --note-separator: #a3afbd;
+}
+
+/* --------------------------------------------------------------------------
+   Base elements
+   -------------------------------------------------------------------------- */
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: var(--fs-page-title); line-height: var(--lh-title); }
+h2 { font-size: var(--fs-panel-title); }
+h3 { font-size: var(--fs-subheading); }
+h4 { font-size: var(--fs-body); }
+h5, h6 { font-size: var(--fs-body-sm); }
+
+p { font-size: var(--fs-body); }
+
+small { font-size: var(--fs-micro); }
+
+b, strong { font-weight: var(--fw-bold); }
+
+em, i { font-style: italic; }
+
+button, input, select, textarea {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-snug);
+}
+
+code, kbd, samp, pre, .mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+code {
+  font-size: var(--fs-code-sm);
+  font-weight: var(--fw-regular);
+  overflow-wrap: anywhere;
+}
+
+pre {
+  font-size: var(--fs-code);
+  line-height: var(--lh-code);
+}
+
+pre code {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+kbd {
+  font-size: 0.82em;
+  font-weight: var(--fw-semibold);
+}
+
+/* --------------------------------------------------------------------------
+   Site chrome: brand, badge, breadcrumbs, tool nav
+   -------------------------------------------------------------------------- */
+
+.brand {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+}
+
+.brand small {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.14em;
+  line-height: 1.35;
+}
+
+.local-badge {
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
+}
+
+.breadcrumbs {
+  font-size: var(--fs-caption);
+  line-height: var(--lh-snug);
+}
+
+.breadcrumbs span:last-child {
+  font-weight: var(--fw-semibold);
+}
+
+.tool-nav a,
+.tool-nav-home {
+  font-size: var(--fs-caption);
+  line-height: 1.3;
+}
+
+.tool-nav-group {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.tool-nav a[aria-current="page"],
+.tool-nav-home {
+  font-weight: var(--fw-semibold);
+}
+
+/* --------------------------------------------------------------------------
+   Page headings and home page
+   -------------------------------------------------------------------------- */
+
+.eyebrow,
+.kicker,
+.card-index {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+}
+
+.hero h1 {
+  font-size: var(--fs-hero);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.hero-copy {
+  font-size: var(--fs-body);
+  line-height: 1.8;
+}
+
+.page-heading h1,
+.windows-hero h1 {
+  font-size: var(--fs-page-title);
+  line-height: var(--lh-title);
+  letter-spacing: -0.035em;
+}
+
+.page-heading p,
+.windows-hero p:not(.kicker) {
+  font-size: var(--fs-body);
+  line-height: 1.75;
+}
+
+.tool-category-heading h2,
+.section-title h2 {
+  font-size: var(--fs-section-title);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.tool-category-heading > p {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+.tool-card h2 {
+  font-size: var(--fs-card-title);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.tool-card p {
+  font-size: var(--fs-body-sm);
+  line-height: 1.75;
+}
+
+.card-index {
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.12em;
+}
+
+.card-arrow {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.card-icon {
+  font-size: var(--fs-subheading);
+  line-height: 1;
+}
+
+.dictionary-list h3 {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.dictionary-list ul {
+  font-size: var(--fs-caption);
+  line-height: 1.8;
+}
+
+.home-footer,
+.tool-footer {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-medium);
+  line-height: 1.6;
+  letter-spacing: 0.08em;
+}
+
+.tool-search .hint {
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+.tool-search-result-heading a {
+  font-size: var(--fs-body-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.tool-search-result > p {
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+/* --------------------------------------------------------------------------
+   Panels and shared prose
+   -------------------------------------------------------------------------- */
+
+.panel h2 {
+  font-size: var(--fs-panel-title);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.panel h3 {
+  font-size: var(--fs-subheading);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+
+.panel p,
+.panel li {
+  font-size: var(--fs-body);
+  line-height: 1.75;
+}
+
+.intro-copy {
+  font-size: var(--fs-body);
+  line-height: 1.8;
+}
+
+.hint,
+.status,
+.subtle {
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+.status {
+  line-height: 1.6;
+}
+
+.chip {
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-semibold);
+  line-height: 1.4;
+}
+
+.count-pill,
+.row-note {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.section-number {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+}
+
+.section-mark {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-medium);
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   Forms, dropdowns and buttons
+   -------------------------------------------------------------------------- */
+
+.field-label,
+.inline-check {
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+}
+
+.field-label {
+  font-weight: var(--fw-semibold);
+}
+
+.inline-check {
+  font-weight: var(--fw-medium);
+}
+
+.field,
+select {
+  font-size: var(--fs-body);
+  line-height: var(--lh-snug);
+}
+
+textarea {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  line-height: var(--lh-code);
+}
+
+.btn {
+  font-size: var(--fs-body-sm);
+  line-height: 1.35;
+  font-weight: var(--fw-semibold);
+}
+
+.btn-small,
+.copy-btn,
+.copy-command {
+  font-size: var(--fs-meta);
+  line-height: 1.35;
+  font-weight: var(--fw-semibold);
+}
+
+.file-input {
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+.file-input::file-selector-button,
+input[type="file"]::file-selector-button {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+}
+
+.drop-zone strong {
+  font-size: var(--fs-subheading);
+  font-weight: var(--fw-bold);
+  line-height: 1.45;
+}
+
+.drop-zone .hint,
+.drop-zone > span {
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+/* Custom searchable select */
+.select-trigger {
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  font-weight: var(--fw-medium);
+}
+
+.select-search {
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-snug);
+}
+
+.select-option {
+  font-size: var(--fs-body-sm);
+  line-height: 1.45;
+}
+
+.mode-selector .mode-option {
+  font-size: var(--fs-subheading);
+  font-weight: var(--fw-semibold);
+}
+
+/* --------------------------------------------------------------------------
+   Tables and data display
+   -------------------------------------------------------------------------- */
+
+table {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+th {
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-semibold);
+  line-height: 1.4;
+}
+
+td {
+  font-size: var(--fs-caption);
+  line-height: 1.65;
+}
+
+table code {
+  font-size: var(--fs-code-sm);
+}
+
+.metadata-summary strong {
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+
+.category-label {
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-semibold);
+}
+
+.impact-badge {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.analysis-stat span,
+.ioc-row span,
+.hash-row strong,
+.rule-head {
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+.rule-head span {
+  font-size: var(--fs-meta);
+  line-height: 1.45;
+}
+
+.analysis-stat strong,
+.hash-row code,
+.rule-hit p,
+.ioc-row code {
+  font-size: var(--fs-caption);
+  line-height: 1.65;
+}
+
+.language-result {
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+
+.progress-wrap,
+.apk-duration,
+.apk-empty {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+.hex-legend {
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+}
+
+.metadata-warnings li,
+.metadata-warnings {
+  font-size: var(--fs-caption);
+  line-height: 1.75;
+}
+
+/* --------------------------------------------------------------------------
+   Code: inline, blocks, outputs, tables
+   -------------------------------------------------------------------------- */
+
+.result-box,
+.hex-dump,
+.ca-extension pre,
+.apk-preview,
+.registry-commands pre,
+.code-block-wrap pre {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  line-height: var(--lh-code);
+}
+
+.result-box {
+  font-size: var(--fs-code);
+  line-height: var(--lh-code);
+}
+
+.hex-dump {
+  font-size: var(--fs-code);
+  line-height: 1.7;
+}
+
+.b64-output,
+.b64-input,
+.qr-output,
+.ca-input,
+.phone-paste,
+textarea.b64-output,
+textarea.b64-input {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code);
+  line-height: var(--lh-code);
+}
+
+.code-finding li code,
+.apk-component-line code,
+.apk-component-filters code {
+  font-size: var(--fs-code-sm);
+}
+
+.code-location,
+.apk-kv-inline,
+.ca-oid {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code-micro);
+  line-height: 1.5;
+}
+
+.ca-row dd.mono,
+.registry-commands pre code,
+.apk-hash-row code,
+.apk-table code,
+.apk-field dd.mono,
+.apk-table td.apk-mono,
+.directory-table code,
+.metadata-table code,
+.phone-table code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-code-sm);
+  line-height: 1.6;
+}
+
+.single-main > strong {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+}
+
+.quick-icon,
+.value-type,
+.hive-short,
+.safe-item > span,
+.workflow-heading > span,
+.file-op-heading > span {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+
+.quick-icon,
+.safe-item > span {
+  font-size: var(--fs-micro);
+}
+
+.value-type {
+  font-size: var(--fs-code-micro);
+  font-weight: var(--fw-semibold);
+}
+
+.hive-short {
+  font-size: var(--fs-code-sm);
+}
+
+.workflow-heading > span {
+  font-size: var(--fs-micro);
+}
+
+.file-op-heading > span {
+  font-size: var(--fs-code-micro);
+}
+
+/* --------------------------------------------------------------------------
+   Expand / collapse (details & summary)
+   -------------------------------------------------------------------------- */
+
+details.panel > summary,
+.apk-disclosure-summary,
+.analysis-disclosure > summary,
+.windows-disclosure > summary,
+.phone-notes > summary {
+  font-size: var(--fs-subheading);
+  font-weight: var(--fw-bold);
+  line-height: 1.5;
+}
+
+.apk-details > summary,
+.evidence-detail > summary {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 1.5;
+}
+
+.apk-disclosure-summary::after {
+  font-size: var(--fs-meta);
+  font-weight: var(--fw-medium);
+}
+
+.disclosure-body > p,
+.disclosure-body li {
+  font-size: var(--fs-body);
+  line-height: 1.8;
+}
+
+.disclosure-body h3 {
+  font-size: var(--fs-subheading);
+}
+
+/* --------------------------------------------------------------------------
+   Linux / code command reference
+   -------------------------------------------------------------------------- */
+
+.search-row .field,
+.code-shell .search-row .field,
+.linux-shell .search-row .field {
+  font-size: var(--fs-body);
+}
+
+.category-chip {
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+}
+
+.category-chip span {
+  font-size: var(--fs-micro);
+}
+
+.subcategory-chip {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+}
+
+.subcategory-chip span {
+  font-size: var(--fs-micro);
+}
+
+.results-toolbar {
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+.command-card h2 {
+  font-size: var(--fs-card-title);
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.command-description,
+.path-purpose,
+.path-edit,
+.command-note {
+  font-size: var(--fs-body-sm);
+  line-height: 1.75;
+}
+
+.command-syntax code,
+.example-line code {
+  font-size: var(--fs-code);
+  line-height: 1.65;
+}
+
+.example-line .copy-command,
+.command-syntax .copy-command {
+  font-size: var(--fs-meta);
+}
+
+.command-source,
+.local-source {
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+}
+
+.source-note h3,
+.source-note h2 {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.source-note p {
+  font-size: var(--fs-body-sm);
+  line-height: 1.75;
+}
+
+.source-links {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+.quick-searches button {
+  font-size: var(--fs-meta);
+  line-height: 1.35;
+}
+
+/* --------------------------------------------------------------------------
+   Phone lookup
+   -------------------------------------------------------------------------- */
+
+.phone-single-result strong {
+  font-size: var(--fs-subheading);
+  line-height: 1.45;
+}
+
+.phone-single-result span,
+.phone-progress,
+.phone-format-hint {
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+}
+
+.single-main > span {
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+.single-operator > strong {
+  font-size: var(--fs-body-sm);
+  line-height: 1.4;
+}
+
+.single-operator > small,
+.phone-metric > small {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.phone-metric > span {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+}
+
+.phone-metric > strong {
+  font-size: 27px;
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+
+.phone-distributions h3 {
+  font-size: var(--fs-body-sm);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+
+.dist-row,
+.dist-row > b {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.phone-table-actions .field {
+  font-size: var(--fs-caption);
+}
+
+.phone-table td:first-child {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+}
+
+.phone-table td small,
+.apk-table td small {
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+}
+
+.phone-table-foot {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.phone-notes-body p {
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+/* --------------------------------------------------------------------------
+   Image tools
+   -------------------------------------------------------------------------- */
+
+.queue-heading h2 {
+  font-size: var(--fs-card-title);
+  line-height: 1.35;
+}
+
+.image-file-name {
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+.image-file-status {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.image-data-heading {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.pixel-estimate h3 {
+  font-size: var(--fs-card-title);
+  line-height: 1.4;
+}
+
+.pixel-estimate .pixel-info {
+  font-size: var(--fs-body-sm);
+  line-height: 1.7;
+}
+
+.b64-info-item span {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+}
+
+.b64-info-item strong {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+.upload-symbol {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.phone-empty-mark,
+.single-check {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   CA certificate inspector
+   -------------------------------------------------------------------------- */
+
+.ca-tab {
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+}
+
+.ca-summary strong {
+  font-size: var(--fs-subheading);
+  line-height: 1.55;
+}
+
+.ca-row dt {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+  font-weight: var(--fw-semibold);
+}
+
+.ca-row dd {
+  font-size: var(--fs-body-sm);
+  line-height: 1.7;
+}
+
+.ca-extension header strong {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.ca-extension .chip {
+  font-size: var(--fs-meta);
+}
+
+.ca-boundary li {
+  font-size: var(--fs-body-sm);
+  line-height: 1.75;
+}
+
+/* --------------------------------------------------------------------------
+   APK inspector
+   -------------------------------------------------------------------------- */
+
+.apk-info-item span,
+.apk-overview-item span,
+.apk-inventory-item span,
+.apk-field dt,
+.apk-permission > p,
+.apk-note p,
+.apk-scheme p,
+.apk-component-line,
+.apk-component-filters,
+.apk-tag,
+.apk-details > summary {
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+}
+
+.apk-info-item strong {
+  font-size: var(--fs-body-sm);
+  line-height: 1.65;
+}
+
+.apk-overview-item strong {
+  font-size: var(--fs-subheading);
+  line-height: 1.55;
+}
+
+.apk-overview-item small,
+.apk-inventory-item small {
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+}
+
+.apk-note strong,
+.apk-scheme strong,
+.apk-signer > header strong,
+.apk-permission-title strong,
+.apk-component-name,
+.apk-manifest-label {
+  font-size: var(--fs-body-sm);
+  font-weight: var(--fw-bold);
+  line-height: 1.45;
+}
+
+.apk-note p,
+.apk-scheme p,
+.apk-component-line,
+.apk-component-filters {
+  font-size: var(--fs-meta);
+  line-height: 1.65;
+}
+
+.apk-hash-row span {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+}
+
+.apk-copy {
+  font-size: var(--fs-micro);
+  line-height: 1.35;
+}
+
+.apk-field dd {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+.apk-field dd.mono,
+.apk-table td.apk-mono {
+  font-size: var(--fs-code-sm);
+}
+
+.apk-tag b {
+  font-weight: var(--fw-semibold);
+}
+
+.apk-badge {
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+}
+
+.apk-component-group > h3,
+.apk-subsection > h3 {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.apk-subsection h4 {
+  font-size: var(--fs-body-sm);
+  line-height: 1.4;
+}
+
+.apk-component-name code,
+.apk-permission-title code,
+.apk-permission code {
+  font-size: var(--fs-code-sm);
+}
+
+.apk-component-line code,
+.apk-component-filters code {
+  font-size: var(--fs-code-sm);
+}
+
+.apk-table {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+.apk-table th {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+}
+
+.apk-inventory-item strong {
+  font-size: var(--fs-card-title);
+  line-height: 1.35;
+}
+
+.apk-warnings ul {
+  font-size: var(--fs-meta);
+  line-height: 1.7;
+}
+
+.code-findings .hint,
+.code-finding > p,
+.code-finding li {
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+.code-finding > strong {
+  font-size: var(--fs-body-sm);
+  line-height: 1.45;
+}
+
+.code-finding li code {
+  font-size: var(--fs-code-sm);
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   Windows reference
+   -------------------------------------------------------------------------- */
+
+.hero-stamp span {
+  font-size: var(--fs-micro);
+  line-height: 1.2;
+  font-weight: var(--fw-bold);
+}
+
+.hero-stamp b {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: var(--fw-bold);
+}
+
+.hero-stamp i {
+  font-size: var(--fs-micro);
+  line-height: 1.2;
+}
+
+.section-nav a {
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+}
+
+.section-title h2 {
+  font-size: var(--fs-section-title);
+  line-height: 1.25;
+}
+
+.quick-card h3 {
+  font-size: var(--fs-card-title);
+  line-height: 1.35;
+}
+
+.quick-card p,
+.callout p,
+.safe-item p {
+  font-size: var(--fs-body-sm);
+  line-height: 1.75;
+}
+
+.quick-meta,
+.quick-card kbd {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.command-note strong {
+  font-size: var(--fs-body-sm);
+}
+
+.copy-line code {
+  font-size: var(--fs-code);
+  line-height: 1.6;
+}
+
+.privacy-note {
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+}
+
+.directory-table th,
+.type-table th {
+  font-size: var(--fs-meta);
+}
+
+.directory-table td,
+.type-table td {
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+}
+
+.directory-table td:first-child code {
+  font-size: var(--fs-code-sm);
+}
+
+.directory-table td small {
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+}
+
+.callout > b {
+  font-size: var(--fs-body-sm);
+  line-height: 1.5;
+}
+
+.tree-icon {
+  font-size: var(--fs-subheading);
+  line-height: 1;
+}
+
+.tree-root small,
+.tree-key small,
+.tree-value small {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+}
+
+.tree-root strong,
+.tree-key strong,
+.tree-value strong {
+  font-size: var(--fs-subheading);
+  line-height: 1.45;
+}
+
+.tree-desc {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+}
+
+.small-icon {
+  font-size: var(--fs-meta);
+  line-height: 1;
+}
+
+.value-icon {
+  font-size: var(--fs-subheading);
+  line-height: 1;
+}
+
+.tree-value code {
+  font-size: var(--fs-code-sm);
+  line-height: 1.6;
+}
+
+.concept-grid b {
+  font-size: var(--fs-body-sm);
+  line-height: 1.45;
+}
+
+.concept-grid p,
+.path-example p {
+  font-size: var(--fs-caption);
+  line-height: 1.65;
+}
+
+.path-example > span {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.path-example > code {
+  font-size: var(--fs-code-sm);
+  line-height: 1.6;
+}
+
+.hive-row h3 {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.hive-row p {
+  font-size: var(--fs-caption);
+  line-height: 1.65;
+}
+
+.hive-scope {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.type-footnote {
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+}
+
+.safe-item b {
+  font-size: var(--fs-body-sm);
+  line-height: 1.45;
+}
+
+.source-links a {
+  font-size: var(--fs-caption);
+  line-height: 1.6;
+}
+
+.source-note > p {
+  font-size: var(--fs-meta);
+  line-height: 1.7;
+}
+
+.workflow-heading h3,
+.file-op-heading h3 {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.workflow-heading small {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.usb-workflow ol {
+  font-size: var(--fs-meta);
+  line-height: 1.75;
+}
+
+.usb-workflow code,
+.file-op-card code,
+.file-op-tip code {
+  font-size: var(--fs-code-sm);
+}
+
+.usb-command-label,
+.usb-subheading {
+  font-size: var(--fs-meta);
+  line-height: 1.4;
+  font-weight: var(--fw-bold);
+}
+
+.usb-command > p,
+.usb-registry-list p,
+.usb-workflow.past > p,
+.usb-id-guide p {
+  font-size: var(--fs-meta);
+  line-height: 1.65;
+}
+
+.usb-registry-list code {
+  font-size: var(--fs-code-sm);
+  line-height: 1.5;
+}
+
+.timeline-step > b {
+  font-size: var(--fs-body-sm);
+  line-height: 1.45;
+}
+
+.timeline-step p {
+  font-size: var(--fs-meta);
+  line-height: 1.7;
+}
+
+.timeline-step > small {
+  font-size: var(--fs-micro);
+  line-height: 1.4;
+}
+
+.usb-id-guide b {
+  font-size: var(--fs-body-sm);
+  line-height: 1.45;
+}
+
+.usb-id-guide code {
+  font-size: var(--fs-code-sm);
+  line-height: 1.5;
+}
+
+.file-op-card > p {
+  font-size: var(--fs-meta);
+  line-height: 1.7;
+}
+
+.file-op-tip {
+  font-size: var(--fs-meta);
+  line-height: 1.6;
+}
+
+.registry-principles b {
+  font-size: var(--fs-subheading);
+  line-height: 1.4;
+}
+
+.registry-principles p {
+  font-size: var(--fs-body-sm);
+  line-height: 1.7;
+}
+
+.registry-commands > div > b {
+  font-size: var(--fs-body-sm);
+  line-height: 1.4;
+}
+
+.registry-commands pre code {
+  font-size: var(--fs-code);
+  line-height: var(--lh-code);
+}
+
+/* --------------------------------------------------------------------------
+   Reference / usage / source notes at the bottom of tool pages
+   --------------------------------------------------------------------------
+   These blocks share one secondary tier: an 18px heading, 15px body copy,
+   muted slate text and the same link blue, regardless of whether the page
+   uses .source-note, a boundary panel or a collapsible note. */
+
+.reference-note,
+.source-note,
+.apk-boundary,
+.ca-boundary,
+.phone-notes {
+  background: var(--note-surface);
+  border-color: var(--note-border);
+  color: var(--note-text);
+}
+
+.reference-note > h2,
+.reference-note > h3,
+.source-note > h2,
+.source-note > h3,
+.apk-boundary > h2,
+.ca-boundary > h2,
+.phone-notes > summary {
+  font-size: var(--fs-card-title);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--note-heading);
+  margin: 0 0 12px;
+}
+
+.reference-note p,
+.reference-note li,
+.source-note p,
+.source-note li,
+.apk-boundary li,
+.ca-boundary li,
+.phone-notes-body p {
+  font-size: var(--fs-body-sm);
+  line-height: 1.8;
+  color: var(--note-text);
+  margin: 0;
+}
+
+.reference-note strong,
+.reference-note b,
+.source-note strong,
+.source-note b,
+.apk-boundary strong,
+.ca-boundary strong,
+.phone-notes-body strong {
+  color: var(--note-heading);
+}
+
+.reference-note ul,
+.reference-note ol,
+.source-note ul,
+.source-note ol,
+.apk-boundary ul,
+.ca-boundary ul,
+.phone-notes-body ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.reference-note li + li,
+.source-note li + li,
+.apk-boundary li + li,
+.ca-boundary li + li,
+.phone-notes-body li + li {
+  margin-top: 8px;
+}
+
+.reference-note p + p,
+.source-note p + p,
+.apk-boundary p + p,
+.ca-boundary p + p,
+.phone-notes-body p + p {
+  margin-top: 10px;
+}
+
+.reference-note p + ul,
+.reference-note p + ol,
+.source-note p + ul,
+.source-note p + ol,
+.apk-boundary p + ul,
+.ca-boundary p + ul,
+.phone-notes-body p + ul {
+  margin-top: 10px;
+}
+
+.reference-note code,
+.source-note code,
+.apk-boundary code,
+.ca-boundary code,
+.phone-notes-body code {
+  font-size: var(--fs-code-sm);
+}
+
+.reference-note .hint,
+.source-note .hint,
+.apk-boundary .hint,
+.ca-boundary .hint,
+.phone-notes .hint {
+  font-size: var(--fs-body-sm);
+  line-height: 1.8;
+  color: var(--note-text);
+}
+
+/* The phone note is a <details> panel, so it must out-rank the generic
+   details.panel > summary rule (including its legacy !important color). */
+details.panel.phone-notes > summary {
+  font-size: var(--fs-card-title);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--note-heading) !important;
+  margin: 0 0 12px;
+}
+
+.source-links {
+  margin-top: 14px;
+  font-size: var(--fs-caption);
+  line-height: 1.7;
+  color: var(--note-separator);
+}
+
+.source-links a {
+  font-size: var(--fs-caption);
+  color: var(--note-link);
+}
+
+.source-links a:hover {
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   Small-screen adjustments
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 760px) {
+  :root {
+    --fs-hero: clamp(34px, 9vw, 44px);
+    --fs-page-title: clamp(30px, 7.5vw, 36px);
+    --fs-section-title: 22px;
+    --fs-panel-title: 20px;
+    --fs-card-title: 17px;
+  }
+
+  .page-heading p,
+  .hero-copy,
+  .panel p,
+  .panel li,
+  .disclosure-body > p,
+  .disclosure-body li,
+  .intro-copy {
+    font-size: var(--fs-body);
+  }
+
+  .tool-card p,
+  .command-description,
+  .callout p,
+  .quick-card p,
+  .safe-item p {
+    font-size: var(--fs-caption);
+  }
+
+  .phone-metric > strong {
+    font-size: 24px;
+  }
+
+  .hero-stamp b {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 680px) {
+  /* Let dense tree rows wrap instead of forcing horizontal page scroll. */
+  .tree-value {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .tree-value code {
+    min-width: 0;
+  }
+
+  /* Keep the compact dot-only status badge on narrow screens. */
+  .local-badge {
+    font-size: 0;
+    padding: 8px;
+  }
+
+  .local-badge i {
+    margin: 0;
+  }
+}

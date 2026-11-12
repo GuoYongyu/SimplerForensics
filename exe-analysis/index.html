@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08111f">
   <title>EXE 静态分析 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
+  <link rel="stylesheet" href="style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
   <script defer src="app.js?v=20261019-1"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
 </head>
 <body>
   <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 离线 · 本地分析</span></header>
@@ -36,7 +37,7 @@
       <details class="panel analysis-disclosure"><summary><span>本地规则扫描</span></summary><div class="disclosure-body"><p class="hint">运行内置静态特征规则，也可加载本地 JSON 文本规则；文件不会上传。此版本不是完整 YARA 引擎。规则命中是待复核线索，未命中不代表文件安全。</p><label class="field-label" for="rules-file">可选：加载本地规则 JSON</label><input class="file-input" id="rules-file" type="file" accept=".json,application/json"><p class="hint" id="rules-file-status">规则文件须包含 rules 数组；<a href="rules-example.json" download>下载本地规则模板</a>。</p><div id="rules"></div></div></details>
       <details class="panel analysis-disclosure"><summary><span>导出与数据边界</span></summary><div class="disclosure-body"><p class="hint">报告保存在用户明确下载的位置。分析过程中不会执行 EXE，不会写入或修改样本，也不会访问网络。</p></div></details>
     </section>
-    <section class="panel"><h2>分析范围与限制</h2><ul class="hint analysis-notes"><li>PE 时间戳和版本资源可能被构建流程或文件作者修改，不能单独证明真实编译时间或来源。</li><li>语言识别依据元数据、运行时、节区、导入和可见字符串等线索；混合语言、裁剪、加壳或混淆可能导致误报、漏报或无法判断。</li><li>字符串和规则扫描仅覆盖静态可见内容；运行时解密、网络下载内容和实际系统行为不在本工具范围内。</li><li>损坏或特意构造的文件可能无法完整解析；解析结果会受字段范围、节区数量和字符串数量上限约束。</li></ul></section>
+    <section class="panel reference-note"><h2>分析范围与限制</h2><ul class="hint analysis-notes"><li>PE 时间戳和版本资源可能被构建流程或文件作者修改，不能单独证明真实编译时间或来源。</li><li>语言识别依据元数据、运行时、节区、导入和可见字符串等线索；混合语言、裁剪、加壳或混淆可能导致误报、漏报或无法判断。</li><li>字符串和规则扫描仅覆盖静态可见内容；运行时解密、网络下载内容和实际系统行为不在本工具范围内。</li><li>损坏或特意构造的文件可能无法完整解析；解析结果会受字段范围、节区数量和字符串数量上限约束。</li><li>需要识别壳、保护器、编译器或链接器签名？可继续使用 <a class="muted-link" href="../die/index.html">DIE 查壳识别</a>；它运行 Detect It Easy 的 DiE-JS PE 签名库，本页不再重复该功能。</li></ul></section>
     <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
   </main>
   <script defer src="../assets/back-to-top.js?v=20261018-1"></script>

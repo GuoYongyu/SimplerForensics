@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>图片尺寸元数据修复 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
+  <link rel="stylesheet" href="style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
   <script defer src="../assets/custom-select.js"></script>
   <script defer src="app.js"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
 </head>
 <body>
   <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
@@ -43,7 +44,7 @@
         </div>
       </div>
     </section>
-    <section class="panel"><h2>修改规则</h2><ul class="hint" style="line-height:1.9;padding-left:19px"><li>只改 JPEG SOF、PNG IHDR 或 WebP VP8/VP8L/VP8X 中记录的尺寸字段。</li><li>PNG 会重新计算 IHDR CRC；这是元数据校验值，不涉及像素数据。</li><li>像素编码数据不会重新解码或重编码。尺寸不匹配图片数据时，部分查看器可能无法显示或只显示部分画面。</li><li>每次修复都会生成新文件，原文件保持不变。批量下载时，浏览器可能会提示是否允许下载多个文件。</li></ul></section>
+    <section class="panel reference-note"><h2>修改规则</h2><ul class="hint"><li>只改 JPEG SOF、PNG IHDR 或 WebP VP8/VP8L/VP8X 中记录的尺寸字段。</li><li>PNG 会重新计算 IHDR CRC；这是元数据校验值，不涉及像素数据。</li><li>像素编码数据不会重新解码或重编码。尺寸不匹配图片数据时，部分查看器可能无法显示或只显示部分画面。</li><li>每次修复都会生成新文件，原文件保持不变。批量下载时，浏览器可能会提示是否允许下载多个文件。</li></ul></section>
     <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
   </main>
   <script defer src="../assets/back-to-top.js?v=20261018-1"></script>

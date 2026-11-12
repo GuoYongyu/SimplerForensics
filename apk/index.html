@@ -4,15 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>APK 元数据解析 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css?v=20261112-1">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
   <script defer src="../assets/x509.js"></script>
   <script defer src="apk-zip.js?v=20261112-1"></script>
   <script defer src="apk-resources.js?v=20261112-1"></script>
   <script defer src="apk-signature.js?v=20261112-1"></script>
   <script defer src="apk-inspect.js?v=20261112-1"></script>
   <script defer src="app.js?v=20261112-1"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
 </head>
 <body>
   <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
@@ -138,7 +139,7 @@
       </section>
     </section>
 
-    <section class="panel apk-boundary">
+    <section class="panel apk-boundary reference-note">
       <h2>解析范围与判断边界</h2>
       <ul>
         <li>APK 结构、签名块、Manifest 和 resources.arsc 直接按字节读取；资源引用会尝试用资源表解析，解析失败时保留 <code>@0x…</code> 形式并给出警告。</li>

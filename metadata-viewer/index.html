@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08111f">
   <title>文件元数据查看 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
   <script defer src="app.js"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
 </head>
 <body>
   <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
@@ -30,7 +31,7 @@
       </section>
       <section id="warnings-panel" class="panel" hidden><h2>解析提示</h2><ul id="warnings" class="hint metadata-warnings"></ul></section>
     </section>
-    <section class="panel"><h2>解析范围与解释</h2><ul class="hint metadata-warnings"><li>本工具读取文件中可见的字段，不执行嵌入对象、附件、脚本或外部资源。</li><li>PDF 压缩对象流、加密内容和复杂 XMP 结构未完整解码；PDF 结果只代表可直接读取到的文档信息字典或未压缩 XMP 文本。</li><li>EXIF 日期通常不包含时区；页面保留原始时间文本，不推断设备时区或拍摄时间。</li><li>图片中的位置、设备型号、作者等字段可能包含敏感信息；请在分享结果前检查内容。</li></ul></section>
+    <section class="panel reference-note"><h2>解析范围与解释</h2><ul class="hint metadata-warnings"><li>本工具读取文件中可见的字段，不执行嵌入对象、附件、脚本或外部资源。</li><li>PDF 压缩对象流、加密内容和复杂 XMP 结构未完整解码；PDF 结果只代表可直接读取到的文档信息字典或未压缩 XMP 文本。</li><li>EXIF 日期通常不包含时区；页面保留原始时间文本，不推断设备时区或拍摄时间。</li><li>图片中的位置、设备型号、作者等字段可能包含敏感信息；请在分享结果前检查内容。</li></ul></section>
     <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
   </main>
 </body>

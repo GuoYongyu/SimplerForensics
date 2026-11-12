@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08111f">
   <title>CA 证书分析 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
-  <script defer src="../assets/nav.js?v=20261111-1"></script>
+  <script defer src="../assets/nav.js?v=20261112-2"></script>
   <script defer src="../assets/x509.js"></script>
   <script defer src="app.js"></script>
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
 </head>
 <body>
   <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
@@ -27,7 +28,7 @@
       <div id="certificate-tabs" class="ca-tabs" role="tablist" aria-label="证书列表"></div>
       <div id="certificate-detail"></div>
     </section>
-    <section class="panel ca-boundary">
+    <section class="panel ca-boundary reference-note">
       <h2>解析范围与判断边界</h2>
       <ul>
         <li>“CA”标签依据 X.509 Basic Constraints 的 CA 字段；Key Usage 会单独展示证书签发用途提示。</li>
