@@ -13,7 +13,7 @@
 
 ![SimplerForensics 首页界面预览](docs/images/readme-cover.svg)
 
-> 文件和输入内容默认留在当前设备；页面无需构建或安装项目依赖。APK 静态分析需要在本机准备 JADX。
+> 文件和输入内容默认留在当前设备；页面无需构建或安装项目依赖。APK 结构解析不需要 JADX；只有反编译代码分析需要在本机准备 JADX。
 
 ## 🧭 工具一览
 
@@ -65,9 +65,20 @@ EXE 静态分析页面位于 exe-analysis/。支持本地计算 MD5、SHA-1、SH
 
 ### APK 分析与 JADX
 
-APK 分析页面调用本机 JADX。成功读取 APK 的 Manifest 后，页面会显示应用名称、包名、版本、主入口、Android API 级别和权限，并提供常见权限的中文说明。代码分析会标出网络、定位、相机或录音、WebView、动态加载、加密、设备标识、剪贴板和文件访问等 API 特征及其源码位置，并搜索静态网址。
+APK 分析页面位于 `apk/`。结构解析在浏览器内直接读取 APK 字节，不依赖 JADX，因此即使 JADX 未准备好，也能先得到文件摘要、签名、Manifest、组件、权限和内容清单；JADX 只用于补充反编译代码特征和源码位置。
 
-这些结果是静态分析线索，不代表应用运行时一定执行了对应行为。混淆、动态加载、运行时拼接或加密，以及从网络下载的内容，都可能导致结果不完整。
+默认提取并展示的关键数据：
+
+- **文件与完整性**：文件名、大小、ZIP 条目数与解压大小、ZIP 注释、时间戳范围、压缩方法、重名/加密条目，以及 MD5、SHA-1、SHA-256 整包摘要（按 4 MiB 分块流式计算，支持最大 1 GB）。
+- **签名**：JAR 签名（v1）的 `META-INF` 文件、摘要/签名算法与 `MANIFEST.MF`/`.SF` 头；APK Signing Block 中的 v2、v3、v3.1、SourceStamp 结构；签名者算法、SDK 范围与防剥离/轮换属性；每个签名证书的主题、颁发者、序列号、有效期、公钥、Key Usage、SHA-256/SHA-1/MD5 指纹及公钥指纹。v2/v3 证书与调试证书会被标记，v1 与 v2/v3 证书不一致时给出提示。
+- **Manifest**：包名、版本、min/target/compile SDK、安装位置、sharedUserId、Application 类与布尔属性（debuggable、allowBackup、usesCleartextTraffic 等）；Activity/Service/Receiver/Provider 及其导出状态、权限、intent-filter、authorities；请求权限（含 sdk-23、maxSdkVersion）、自定义权限及保护级别、uses-feature、uses-library、queries、meta-data、supports-screens、instrumentation，并可查看解码后的 AndroidManifest.xml；应用图标会解析为资源路径，存在对应条目时给出文件大小与 SHA-256。
+- **内容清单**：DEX 文件版本/类数/方法数/字符串数与校验和、原生库 ABI 与 ELF 架构、assets 与 res/raw 清单及类型识别、关键文件 SHA-256、META-INF 文件与依赖/构建版本标记、可疑条目（嵌套归档、数据库、密钥、脚本、隐藏文件、双重扩展名、异常压缩比等），以及小型文本资产的预览。
+- **字符串与线索**：从 resources.arsc 字符串资源、assets/res/raw 文本和 DEX 字符串池中提取 Flag 形式字符串、口令/令牌/云密钥、私钥头、数据库连接串、静态网址、IP、邮箱和存储路径，并标注来源。资源字符串可展开查看。
+- **JSON 报告**：点击按钮后在本机生成，包含页面展示的全部字段、截断标记与限制说明。
+
+结果会区分“直接读取的值”“解析器推导值”和“正则/启发式线索”。签名部分只读取结构与证书，不验证密码学签名、证书链、时间戳或吊销状态；Flag、密钥等命中可能误报，未命中也不代表不存在。混淆、加密、运行时拼接或网络下发的内容无法静态发现。JADX 代码分析会标出网络、定位、相机或录音、WebView、动态加载、加密、设备标识、剪贴板和文件访问等 API 特征及源码位置，并搜索静态网址；JADX 失败不影响结构、签名和内容清单。
+
+可运行 `node test/apk-inspect.test.cjs` 执行解析回归测试；设置环境变量 `APK_FIXTURE` 为某个真实 APK 路径时，还会追加端到端检查。
 
 项目提供跨平台便携运行包，内含 JADX 1.5.6 CLI 和 Temurin JRE 17，支持 macOS Intel/Apple Silicon、Linux x64/ARM64 和 Windows x64；目标电脑无需预装 Java。首次准备运行包时，在一台可联网的电脑上运行：
 
@@ -96,7 +107,7 @@ CA 证书分析位于 `ca-certificate/`，可粘贴单张或多张 PEM `CERTIFIC
 
 ## 隐私与联网
 
-网页服务只绑定 127.0.0.1，不会向局域网或互联网开放。APK 文件和 JADX 生成的临时文件均在本机处理，不会上传到远程服务。除首次准备 JADX 便携运行包时从官方发行页和 Adoptium 下载文件外，其他页面不加载远程脚本、字体或 API。
+网页服务只绑定 127.0.0.1，不会向局域网或互联网开放。APK 结构、签名与内容清单由浏览器读取同一文件；只有 JADX 代码分析会把文件提交给本机服务。APK 文件和 JADX 生成的临时文件均在本机处理，不会上传到远程服务。除首次准备 JADX 便携运行包时从官方发行页和 Adoptium 下载文件外，其他页面不加载远程脚本、字体或 API。
 
 ## 开源致谢
 

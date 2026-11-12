@@ -4,25 +4,149 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>APK 元数据解析 · SimplerForensics</title>
-  <link rel="stylesheet" href="../assets/style.css?v=20261031-1">
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-1">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
   <script defer src="../assets/nav.js?v=20261111-1"></script>
-  <script defer src="app.js"></script>
+  <script defer src="../assets/x509.js"></script>
+  <script defer src="apk-zip.js?v=20261112-1"></script>
+  <script defer src="apk-resources.js?v=20261112-1"></script>
+  <script defer src="apk-signature.js?v=20261112-1"></script>
+  <script defer src="apk-inspect.js?v=20261112-1"></script>
+  <script defer src="app.js?v=20261112-1"></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a><span class="local-badge"><i></i> 仅在本地运行</span></header>
   <main class="page-shell">
     <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>APK 元数据解析</span></div>
-    <section class="page-heading"><div><p class="kicker">06 / ANDROID PACKAGE</p><h1>APK 元数据解析</h1><p>使用本机便携版 JADX 分析 APK 结构、权限和代码特征。</p></div><span class="chip">本机分析 · 不上传</span></section>
+    <section class="page-heading">
+      <div>
+        <p class="kicker">06 / ANDROID PACKAGE</p>
+        <h1>APK 元数据解析</h1>
+        <p>在本机读取 APK 的签名、Manifest、组件、权限、assets、DEX 字符串与代码线索，并调用便携版 JADX 补充反编译代码特征。</p>
+      </div>
+      <span class="chip">本机分析 · 不上传</span>
+    </section>
     <section class="panel">
       <label class="field-label" for="apk-file">选择 APK 文件</label>
       <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="选择或拖放 APK 文件"><strong>拖放 APK 到这里</strong><span>或点击选择文件（最大 1 GB）</span><input id="apk-file" class="file-input" type="file" accept=".apk,application/vnd.android.package-archive,application/zip"></div>
-      <div id="status" class="status" hidden></div>
+      <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+      <p class="hint apk-input-note">结构、签名与内容清单在浏览器内直接读取，无需等待 JADX；JADX 只用于补充反编译代码与静态网址结果。两类结果都会标注来源和判断边界。</p>
     </section>
     <section id="results" hidden>
-      <section class="panel"><h2>应用信息</h2><div id="app-info" class="apk-info-grid"></div><p class="hint apk-sdk-note">最低兼容版本决定应用可安装的最低 Android API 级别；目标 Android 版本表示应用声明适配的 API 级别，不代表最高兼容版本。</p></section>
-      <section class="panel"><div class="apk-permission-heading apk-result-heading"><h2>声明的权限</h2><span id="permission-count" class="chip"></span><button id="permission-toggle" class="apk-expand" type="button" aria-label="显示更多权限" aria-expanded="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div><div id="permissions" class="apk-permissions"></div></section>
-      <section class="panel"><div class="apk-permission-heading"><div><h2>JADX 代码分析</h2><p class="hint">识别代码中常见的网络、设备能力、动态加载、加密等 API，并列出静态网址与来源位置。特征仅表示代码引用线索，不等同于运行时行为。</p></div><span id="jadx-version" class="chip" title="本机 JADX CLI 版本">JADX 版本读取中</span></div><div id="jadx-status" class="status" role="status" aria-live="polite">等待分析</div><p id="analysis-duration" class="hint apk-duration">解析用时：—</p><div id="code-findings-section" class="apk-result-section" hidden><div class="apk-result-heading"><h3>代码能力与 API 特征</h3><span id="code-finding-count" class="chip"></span><button id="code-findings-toggle" class="apk-expand" type="button" aria-label="显示更多代码特征" aria-expanded="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div><div id="code-findings" class="code-findings" hidden><p class="hint">以下依据反编译源码中的 API 名称和调用片段匹配；可能包含未实际执行的代码，也可能因混淆或动态加载而遗漏。</p><div id="code-finding-items"></div></div></div><div id="jadx-url-results" class="apk-result-section" hidden><div class="apk-result-heading"><h3>静态网址</h3><span id="jadx-url-count" class="chip"></span><button id="jadx-urls-toggle" class="apk-expand" type="button" aria-label="显示更多网址" aria-expanded="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div><p id="jadx-url-note" class="hint"></p><div class="table-wrap"><table class="jadx-url-table"><thead><tr><th>静态网址</th><th>来源</th></tr></thead><tbody id="jadx-urls"></tbody></table></div></div></section>
+      <section class="panel">
+        <div class="apk-result-heading"><h2>检查概览</h2><span id="overview-chip" class="chip"></span></div>
+        <div id="overview" class="apk-overview-grid"></div>
+        <div id="security-notes" class="apk-notes"></div>
+      </section>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>文件与完整性</h2><span class="chip">整包摘要</span></div>
+        <div id="file-info" class="apk-info-grid"></div>
+        <div id="hash-list" class="apk-hash-list"></div>
+        <p class="hint">MD5、SHA-1、SHA-256 由浏览器按 4 MiB 分块读取后计算，可处理最大 1 GB 文件；ZIP 时间戳是压缩包内记录的本地时间（时区未记录），扩展时间戳字段才是 UTC。</p>
+      </section>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>签名信息</h2><span id="signature-chip" class="chip"></span></div>
+        <div id="signature-summary" class="apk-signature-summary"></div>
+        <div id="signature-schemes" class="apk-signature-schemes"></div>
+        <div id="signer-list" class="apk-signers"></div>
+        <p class="hint">这里只读取 JAR 签名（v1）与 APK Signature Scheme v2/v3/v3.1 的结构、算法标识和证书字段，并计算证书指纹；<strong>不校验密码学签名是否有效</strong>，也不判断证书是否受信任。需要有效性结论时，请使用 apksigner 等工具复核。</p>
+        <div id="signature-warnings" class="apk-warnings" hidden></div>
+      </section>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>应用信息</h2><span id="manifest-chip" class="chip"></span></div>
+        <div id="app-info" class="apk-info-grid"></div>
+        <div class="apk-subsection">
+          <h3>Application 声明</h3>
+          <div id="application-flags" class="apk-tag-list"></div>
+          <p class="hint">“未声明”表示 Manifest 未显式设置该属性，实际行为由 Android 版本和系统默认值决定。</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>组件</h2><span id="component-count" class="chip"></span></div>
+        <div id="component-groups" class="apk-components"></div>
+        <p class="hint">导出状态优先采用 Manifest 的 <code>android:exported</code>；未声明时按 Android 默认规则推断：含 intent-filter 的 Activity/Service/Receiver 默认导出，Provider 自 Android 4.2 起默认不导出。导出不等于存在漏洞，是否可利用取决于组件实现与权限校验。</p>
+      </section>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>权限与功能声明</h2><span id="permission-count" class="chip"></span><button id="permission-toggle" class="apk-expand" type="button" aria-label="显示更多权限" aria-expanded="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+        <div id="permissions" class="apk-permissions"></div>
+        <div class="apk-subsection" id="declared-permission-section" hidden>
+          <h3>自定义权限</h3>
+          <div id="declared-permissions" class="apk-table-wrap"></div>
+        </div>
+        <div class="apk-subsection" id="feature-section" hidden>
+          <h3>uses-feature / uses-library</h3>
+          <div id="feature-list" class="apk-table-wrap"></div>
+        </div>
+      </section>
+
+      <details class="panel apk-disclosure" id="manifest-extras">
+        <summary class="apk-disclosure-summary">清单其他声明<span id="manifest-extra-count" class="chip"></span></summary>
+        <div id="manifest-extras-body"></div>
+      </details>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>APK 内容清单</h2><span id="inventory-chip" class="chip"></span></div>
+        <div id="inventory-summary" class="apk-inventory-summary"></div>
+        <div id="inventory-key-files" class="apk-subsection"></div>
+        <div id="inventory-meta" class="apk-subsection"></div>
+        <div id="inventory-dex" class="apk-subsection"></div>
+        <div id="inventory-libs" class="apk-subsection"></div>
+        <div id="inventory-assets" class="apk-subsection"></div>
+        <div id="inventory-raw" class="apk-subsection"></div>
+        <div id="inventory-suspicious" class="apk-subsection"></div>
+        <div id="inventory-others" class="apk-subsection"></div>
+      </section>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>字符串与线索</h2><span id="strings-chip" class="chip"></span></div>
+        <p class="hint">线索来自 Manifest、resources.arsc 字符串资源、assets/res/raw 文本文件和 DEX 字符串池。命中只代表出现对应文本，不代表凭据有效或 Flag 正确。</p>
+        <div id="secret-hits"></div>
+        <div id="network-hits"></div>
+        <div id="resource-strings"></div>
+      </section>
+
+      <section class="panel">
+        <div class="apk-permission-heading">
+          <div>
+            <h2>JADX 代码分析</h2>
+            <p class="hint">反编译源码中的网络、设备能力、动态加载、加密等 API 特征，以及静态网址与来源位置。特征仅表示代码引用线索，不等同于运行时行为。</p>
+          </div>
+          <span id="jadx-version" class="chip" title="本机 JADX CLI 版本">JADX 版本读取中</span>
+        </div>
+        <div id="jadx-status" class="status" role="status" aria-live="polite">等待分析</div>
+        <p id="analysis-duration" class="hint apk-duration">解析用时：—</p>
+        <div id="code-findings-section" class="apk-result-section" hidden>
+          <div class="apk-result-heading"><h3>代码能力与 API 特征</h3><span id="code-finding-count" class="chip"></span><button id="code-findings-toggle" class="apk-expand" type="button" aria-label="显示更多代码特征" aria-expanded="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+          <div id="code-findings" class="code-findings" hidden><p class="hint">以下依据反编译源码中的 API 名称和调用片段匹配；可能包含未实际执行的代码，也可能因混淆、动态加载而遗漏。</p><div id="code-finding-items"></div></div>
+        </div>
+        <div id="jadx-url-results" class="apk-result-section" hidden>
+          <div class="apk-result-heading"><h3>JADX 静态网址</h3><span id="jadx-url-count" class="chip"></span><button id="jadx-urls-toggle" class="apk-expand" type="button" aria-label="显示更多网址" aria-expanded="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+          <p id="jadx-url-note" class="hint"></p>
+          <div class="table-wrap"><table class="jadx-url-table"><thead><tr><th>静态网址</th><th>来源</th></tr></thead><tbody id="jadx-urls"></tbody></table></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="apk-result-heading"><h2>报告导出</h2></div>
+        <div class="button-row"><button id="export-json" class="btn btn-primary" type="button">下载 JSON 报告</button><button id="copy-summary" class="btn" type="button">复制摘要</button></div>
+        <p id="export-note" class="hint">JSON 报告包含页面展示的全部字段及截断标记，可用于留档或进一步处理；报告在点击按钮后才生成并下载，不会上传。</p>
+      </section>
+    </section>
+
+    <section class="panel apk-boundary">
+      <h2>解析范围与判断边界</h2>
+      <ul>
+        <li>APK 结构、签名块、Manifest 和 resources.arsc 直接按字节读取；资源引用会尝试用资源表解析，解析失败时保留 <code>@0x…</code> 形式并给出警告。</li>
+        <li>签名部分只列结构和证书，不验证签名、证书链、时间戳或吊销状态；v3 签名轮换、v3.1 与 SourceStamp 仅标记是否存在。</li>
+        <li>assets 与 res/raw 只预览小于 4 MiB 的文件，文本扫描上限 256 KiB/文件；DEX 字符串扫描总量有上限，超过上限会显式提示。</li>
+        <li>Flag、密钥、口令等命中基于正则表达式，可能误报；未命中不代表不存在，混淆、加密、运行时拼接或网络下发的内容无法静态发现。</li>
+        <li>JADX 结果依赖本机便携运行包；JADX 失败不会影响结构、签名和内容清单，页面会分别显示状态。</li>
+      </ul>
     </section>
     <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
   </main>
