@@ -20,6 +20,7 @@
       ['图片 Base64', 'image-base64.svg', '../image-base64/index.html'],
       ['时间戳', 'timestamp.svg', '../timestamp/index.html'],
       ['密文字典匹配', 'md5.svg', '../ciphertext/index.html'],
+      ['HashCat 破解', 'hashcat.svg', '../hashcat/index.html'],
     ]],
     ['资料检索', [
       ['Linux', 'linux-terminal.svg', '../linux/index.html'],

@@ -22,7 +22,7 @@
 | <img src="assets/icons/signature.svg" width="20" alt=""> [文件格式速查](signatures/index.html) · <img src="assets/icons/hex-viewer.svg" width="20" alt=""> [十六进制查看器](hex-viewer/index.html) · <img src="assets/icons/metadata-viewer.svg" width="20" alt=""> [元数据查看](metadata-viewer/index.html) · <img src="assets/icons/file-disguise.svg" width="20" alt=""> [文件伪装分析](file-disguise/index.html)<br><br><img src="assets/icons/image-fix.svg" width="20" alt=""> [图片尺寸修复](image-fix/index.html) · <img src="assets/icons/exe-analysis.svg" width="20" alt=""> [EXE 静态分析](exe-analysis/index.html) · <img src="assets/icons/die.svg" width="20" alt=""> [DIE 查壳识别](die/index.html) · <img src="assets/icons/ca-certificate.svg" width="20" alt=""> [CA 证书分析](ca-certificate/index.html) | <img src="assets/icons/apk-file.svg" width="20" alt=""> [APK 元数据解析](apk/index.html) · <img src="assets/icons/qr.svg" width="20" alt=""> [二维码识别](qr-reader/index.html) |
 | 数据处理 | 资料检索 |
 |:--|:--|
-| <img src="assets/icons/phone-lookup.svg" width="20" alt=""> [手机号归属地](phone-lookup/index.html) · <img src="assets/icons/base64.svg" width="20" alt=""> [Base64 编解码](base64/index.html) · <img src="assets/icons/image-base64.svg" width="20" alt=""> [图片 Base64](image-base64/index.html) · <img src="assets/icons/timestamp.svg" width="20" alt=""> [时间戳转换](timestamp/index.html) · <img src="assets/icons/md5.svg" width="20" alt=""> [密文字典匹配](ciphertext/index.html) | <img src="assets/icons/linux-terminal.svg" width="20" alt=""> [Linux 指令检索](linux/index.html) · <img src="assets/icons/code-commands.svg" width="20" alt=""> [代码指令检索](code-commands/index.html) · <img src="assets/icons/windows.svg" width="20" alt=""> [Windows 配置指南](windows/index.html) |
+| <img src="assets/icons/phone-lookup.svg" width="20" alt=""> [手机号归属地](phone-lookup/index.html) · <img src="assets/icons/base64.svg" width="20" alt=""> [Base64 编解码](base64/index.html) · <img src="assets/icons/image-base64.svg" width="20" alt=""> [图片 Base64](image-base64/index.html) · <img src="assets/icons/timestamp.svg" width="20" alt=""> [时间戳转换](timestamp/index.html) · <img src="assets/icons/md5.svg" width="20" alt=""> [密文字典匹配](ciphertext/index.html) · <img src="assets/icons/hashcat.svg" width="20" alt=""> [HashCat 破解](hashcat/index.html) | <img src="assets/icons/linux-terminal.svg" width="20" alt=""> [Linux 指令检索](linux/index.html) · <img src="assets/icons/code-commands.svg" width="20" alt=""> [代码指令检索](code-commands/index.html) · <img src="assets/icons/windows.svg" width="20" alt=""> [Windows 配置指南](windows/index.html) |
 
 ## 🚀 快速启动
 
@@ -40,6 +40,12 @@
 ### 密文字典匹配
 
 在页面中选择 ciphertext/dicts 文件夹，或手动选择 TXT 字典文件。支持自动检测和指定 MD5、SHA-1、SHA-256、SHA-384、SHA-512、bcrypt 及 Django 格式 PBKDF2-SHA256。可选输入额外 Salt 文本，并选择将其直接拼接到字典明文前或后（不加分隔符），再对拼接后的候选文本进行匹配；结果会同时显示原始字典明文和实际参与哈希的文本。浏览器因本地文件安全限制，不会在未选择的情况下读取相邻文件。若希望按从易到难的顺序尝试字典，可在文件名前添加 00-、10- 等编号。bcrypt.js 浏览器实现及许可证见 ciphertext/BCRYPT-LICENSE.txt。
+
+### HashCat 破解工作台
+
+页面位于 `hashcat/`，提供掩码、字典 + 规则、混合和正则约束四种候选生成方式，在浏览器 Web Worker 中验证 MD5、SHA-1、SHA-256、SHA-512、NTLM 和 bcrypt 哈希。掩码构建器支持 `?l`、`?u`、`?d`、`?s`、`?a` 和自定义 `?1`–`?4` 字符集；字典规则支持大小写、反转、重复、1337 替换、前后缀、追加字符和年份；正则模式支持常用子集，并可用长度、字符类型、必须包含/排除等条件过滤候选。页面内置可展开的 HashCat 指令教程和当前设置对应的命令；教程覆盖哈希模式、攻击模式、掩码、规则、常用参数、会话恢复、性能与排错。
+
+候选生成在主线程分块进行，哈希验证在 Web Worker 中完成；页面只处理无 salt 的常见格式，不调用 GPU，不执行 HashCat 命令，也不上传哈希或字典。掩码和正则的候选空间上限为 5 亿；混合与字典模式边读边跑，可随时停止。带 salt、WPA、Kerberos、NetNTLM 等模式、完整规则语法和 GPU 加速请使用本机 HashCat。bcrypt 验证复用 `ciphertext/bcrypt-source.js`。
 
 ### 文件与图片分析
 
@@ -135,7 +141,7 @@ CA 证书分析位于 `ca-certificate/`，可粘贴单张或多张 PEM `CERTIFIC
 
 ## 隐私与联网
 
-网页服务只绑定 127.0.0.1，不会向局域网或互联网开放。APK 结构、签名与内容清单由浏览器读取同一文件；只有 JADX 代码分析会把文件提交给本机服务。APK 文件和 JADX 生成的临时文件均在本机处理，不会上传到远程服务。DIE 查壳识别不调用任何本机程序，PE 字节和 DiE-JS 签名库都在浏览器 Web Worker 中处理。除首次准备 JADX 便携运行包时从官方发行页和 Adoptium 下载文件外，其他页面不加载远程脚本、字体或 API。
+网页服务只绑定 127.0.0.1，不会向局域网或互联网开放。APK 结构、签名与内容清单由浏览器读取同一文件；只有 JADX 代码分析会把文件提交给本机服务。APK 文件和 JADX 生成的临时文件均在本机处理，不会上传到远程服务。DIE 查壳识别不调用任何本机程序，PE 字节和 DiE-JS 签名库都在浏览器 Web Worker 中处理。HashCat 破解工作台在浏览器内生成候选并用 Web Worker 验证哈希，不调用本机 HashCat，也不上传哈希或字典。除首次准备 JADX 便携运行包时从官方发行页和 Adoptium 下载文件外，其他页面不加载远程脚本、字体或 API。
 
 ## 开源致谢
 
@@ -145,6 +151,6 @@ DIE 查壳识别使用 [Detect It Easy](https://github.com/horsicq/Detect-It-Eas
 
 二维码识别使用 [jsQR](https://github.com/cozmo/jsQR)，感谢其维护者和贡献者；项目采用 Apache-2.0 许可证，文本见 assets/vendor/jsQR-LICENSE.txt。
 
-密文字典匹配使用 [bcrypt.js 2.4.3](https://github.com/dcodeIO/bcrypt.js) 验证 bcrypt 候选值，感谢 Daniel Wirtz 及贡献者；bcrypt.js 采用 BSD-3-Clause 许可证。其内嵌的 ISAAC 随机数实现感谢 Yves-Marie K. Rinquin，采用 MIT 许可证。相关许可文本见 ciphertext/BCRYPT-LICENSE.txt。
+密文字典匹配使用 [bcrypt.js 2.4.3](https://github.com/dcodeIO/bcrypt.js) 验证 bcrypt 候选值，感谢 Daniel Wirtz 及贡献者；bcrypt.js 采用 BSD-3-Clause 许可证。其内嵌的 ISAAC 随机数实现感谢 Yves-Marie K. Rinquin，采用 MIT 许可证。相关许可文本见 ciphertext/BCRYPT-LICENSE.txt。HashCat 破解工作台也复用这份 bcrypt.js 实现；HashCat 是其作者的项目，本页不是官方前端。
 
 手机号归属地查询使用 [jieeit/phone](https://github.com/jieeit/phone) 发布的离线号段数据，感谢 Jieeit 整理并分享数据；数据采用 MIT 许可证，文本见 phone-lookup/data/LICENSE-MIT.txt。Linux 指令索引筛选并链接了[菜鸟教程](https://www.runoob.com/)的内容，感谢菜鸟教程提供学习资料。

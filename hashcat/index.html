@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>HashCat 破解工作台 · SimplerForensics</title>
+  <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+  <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
+  <link rel="stylesheet" href="style.css?v=20261113-1">
+  <script defer src="../assets/nav.js?v=20261113-1"></script>
+  <script defer src="../assets/custom-select.js"></script>
+  <script defer src="../ciphertext/bcrypt-source.js?v=20261113-1"></script>
+  <script defer src="hashcat-core.js?v=20261113-1"></script>
+  <script defer src="app.js?v=20261113-1"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html"><img class="brand-logo" src="../assets/icons/brand.svg" alt=""><span>SimplerForensics<small>LOCAL TOOLKIT</small></span></a>
+    <span class="local-badge"><i></i> 仅在本地运行</span>
+  </header>
+  <main class="page-shell">
+    <div class="breadcrumbs"><a href="../index.html">工具集</a><span>›</span><span>HashCat 破解工作台</span></div>
+
+    <section class="page-heading">
+      <div>
+        <p class="kicker">03 / HASHCAT WORKBENCH</p>
+        <h1>HashCat 破解工作台</h1>
+        <p>用可视化掩码、字典规则、混合攻击或正则约束生成候选，并在浏览器本地验证哈希。页面内置 HashCat 指令教程与命令对照；不调用 GPU，不上传哈希或字典，也不需要安装 HashCat。</p>
+      </div>
+      <div class="hc-head-chips">
+        <span class="chip">本地 Worker 验证</span>
+        <span class="chip">掩码 / 字典 / 混合 / 正则</span>
+        <span class="chip">HashCat 指令教程</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="hc-section-head">
+        <div>
+          <h2>1. 目标哈希</h2>
+          <p>每行一个哈希。支持 MD5、SHA-1、SHA-256、SHA-512、NTLM 和 bcrypt；当前只验证无 salt 的常见格式。</p>
+        </div>
+        <button class="btn" id="fill-example" type="button">填入示例</button>
+      </div>
+      <label class="field-label" for="hashes">哈希值</label>
+      <textarea id="hashes" class="hc-hash-input" spellcheck="false" autocomplete="off" placeholder="5d41402abc4b2a76b9719d911017c592&#10;&#10;$2b$10$..."></textarea>
+      <div class="field-row hc-mode-row">
+        <label>
+          <span class="field-label">哈希模式</span>
+          <select id="hash-mode">
+            <option value="AUTO" selected>自动检测（32 位十六进制按 MD5）</option>
+            <option value="MD5">MD5 · -m 0</option>
+            <option value="SHA1">SHA-1 · -m 100</option>
+            <option value="SHA256">SHA-256 · -m 1400</option>
+            <option value="SHA512">SHA-512 · -m 1700</option>
+            <option value="NTLM">NTLM · -m 1000</option>
+            <option value="BCRYPT">bcrypt · -m 3200</option>
+          </select>
+        </label>
+        <div class="hc-mode-note">
+          <span class="field-label">识别规则</span>
+          <p class="hint">32 位十六进制无法区分 MD5 与 NTLM，自动模式按 MD5 处理。bcrypt 使用固定成本，浏览器验证速度很慢，更适合小字典。</p>
+        </div>
+      </div>
+      <p id="hash-summary" class="status" role="status" aria-live="polite">尚未输入哈希。可粘贴一个哈希，或点击右上角“填入示例”。</p>
+    </section>
+
+    <section class="panel">
+      <div class="hc-section-head">
+        <div>
+          <h2>2. 攻击方式</h2>
+          <p>选择候选的生成策略。切换模式不会清空已输入的哈希和字典。</p>
+        </div>
+        <span class="chip">4 种模式</span>
+      </div>
+      <div class="hc-attack-tabs" role="radiogroup" aria-label="攻击方式">
+        <label class="hc-attack-tab">
+          <input type="radio" name="attack" value="mask" checked>
+          <span class="hc-attack-name">掩码攻击</span>
+          <span class="hc-attack-desc">按字符类型逐位枚举，适合已知长度和字符范围。</span>
+        </label>
+        <label class="hc-attack-tab">
+          <input type="radio" name="attack" value="dict">
+          <span class="hc-attack-name">字典攻击</span>
+          <span class="hc-attack-desc">读取本地 TXT 字典，可叠加大小写、数字、年份和 1337 规则。</span>
+        </label>
+        <label class="hc-attack-tab">
+          <input type="radio" name="attack" value="hybrid">
+          <span class="hc-attack-name">混合攻击</span>
+          <span class="hc-attack-desc">字典词与掩码拼接，适合“单词 + 数字后缀”等常见结构。</span>
+        </label>
+        <label class="hc-attack-tab">
+          <input type="radio" name="attack" value="regex">
+          <span class="hc-attack-name">正则约束</span>
+          <span class="hc-attack-desc">用正则描述候选，或配合“必须包含”条件缩小范围。</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel" id="dict-section" hidden>
+      <div class="hc-section-head">
+        <div>
+          <h2>字典与规则</h2>
+          <p>字典仅在本地读取，按文件名顺序逐行处理；README 文件会跳过。规则会把每个词扩展成多个候选。</p>
+        </div>
+        <button class="btn" id="download-sample" type="button">下载示例字典</button>
+      </div>
+      <div class="field-row">
+        <div>
+          <span class="field-label">字典目录</span>
+          <input class="visually-hidden-file" id="dict-folder" type="file" webkitdirectory directory multiple accept=".txt,text/plain">
+          <button class="btn choose-files" type="button" data-pick="dict-folder">选择字典目录</button>
+        </div>
+        <div>
+          <span class="field-label">或选择 TXT 字典</span>
+          <input class="visually-hidden-file" id="dict-files" type="file" multiple accept=".txt,text/plain">
+          <button class="btn choose-files" type="button" data-pick="dict-files">选择 TXT 文件</button>
+        </div>
+      </div>
+      <div id="dict-list" class="dictionary-list"><h3>已读取字典（0）</h3><div class="empty">尚未选择 TXT 字典</div></div>
+
+      <fieldset class="hc-rules">
+        <legend>规则变换</legend>
+        <div class="field-row">
+          <label>
+            <span class="field-label">基础变换</span>
+            <select id="rule-base">
+              <option value="none" selected>保持原样</option>
+              <option value="lower">全部小写 · l</option>
+              <option value="upper">全部大写 · u</option>
+              <option value="capitalize">首字母大写 · c</option>
+            </select>
+          </label>
+          <label>
+            <span class="field-label">自定义前缀</span>
+            <input class="field" id="rule-prefix" type="text" autocomplete="off" spellcheck="false" placeholder="例如 !">
+          </label>
+          <label>
+            <span class="field-label">自定义后缀</span>
+            <input class="field" id="rule-suffix" type="text" autocomplete="off" spellcheck="false" placeholder="例如 2024">
+          </label>
+        </div>
+        <div class="hc-check-grid">
+          <label><input id="rule-trim" type="checkbox"> 去除首尾空格</label>
+          <label><input id="rule-reverse" type="checkbox"> 同时尝试反转 · r</label>
+          <label><input id="rule-duplicate" type="checkbox"> 同时尝试重复一次 · d</label>
+          <label><input id="rule-leet" type="checkbox"> 1337 替换 · sa@ se3 si1 so0 ss$</label>
+          <label><input id="rule-years" type="checkbox"> 追加年份 2020–2026</label>
+        </div>
+        <div class="field-row">
+          <label>
+            <span class="field-label">追加字符（每个字符生成一个变体）</span>
+            <input class="field" id="rule-append-chars" type="text" autocomplete="off" spellcheck="false" placeholder="例如 0123456789">
+          </label>
+          <label>
+            <span class="field-label">前置字符（每个字符生成一个变体）</span>
+            <input class="field" id="rule-prepend-chars" type="text" autocomplete="off" spellcheck="false" placeholder="例如 !@#">
+          </label>
+        </div>
+        <div class="button-row">
+          <button class="btn hc-small-btn" type="button" data-fill-chars="rule-append-chars" data-chars="0123456789">追加数字 0–9</button>
+          <button class="btn hc-small-btn" type="button" data-fill-chars="rule-append-chars" data-chars="!@#$">追加符号</button>
+          <button class="btn hc-small-btn" type="button" data-fill-chars="rule-prepend-chars" data-chars="!@#">前置符号</button>
+          <button class="btn hc-small-btn" type="button" data-fill-chars="rule-suffix" data-chars="2024">后缀 2024</button>
+        </div>
+        <p id="rule-estimate" class="hint">每个字典词生成 1 个候选。</p>
+      </fieldset>
+
+      <div id="hybrid-options" hidden>
+        <div class="field-row hc-hybrid-row">
+          <label>
+            <span class="field-label">拼接方向</span>
+            <select id="hybrid-direction">
+              <option value="suffix" selected>掩码拼在词后 · -a 6（word + mask）</option>
+              <option value="prefix">掩码拼在词前 · -a 7（mask + word）</option>
+            </select>
+          </label>
+          <div>
+            <span class="field-label">组合方式</span>
+            <p class="hint">先应用上面的字典规则，再把下方掩码拼接到每个变体。例如字典词 <code>admin</code> + 掩码 <code>?d?d</code> 会生成 admin00–admin99。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="mask-section">
+      <div class="hc-section-head">
+        <div>
+          <h2 id="mask-section-title">可视化掩码构建器</h2>
+          <p id="mask-section-note">每个块代表一组位置。编译后的掩码与 HashCat -a 3 的写法一致。</p>
+        </div>
+        <span class="chip">对应 -a 3</span>
+      </div>
+      <div class="hc-mask-toolbar">
+        <div class="hc-segmented" role="radiogroup" aria-label="掩码输入方式">
+          <label><input type="radio" name="mask-source" value="builder" checked> 可视化构建</label>
+          <label><input type="radio" name="mask-source" value="raw"> 直接输入掩码</label>
+        </div>
+        <div class="button-row">
+          <button class="btn" id="add-block" type="button">添加块</button>
+          <button class="btn" id="clear-blocks" type="button">清空块</button>
+        </div>
+      </div>
+      <div id="mask-builder">
+        <div id="block-list" class="hc-block-list"></div>
+      </div>
+      <div id="mask-raw-wrap" hidden>
+        <label>
+          <span class="field-label">HashCat 掩码</span>
+          <input class="field" id="raw-mask" type="text" autocomplete="off" spellcheck="false" placeholder="?l?l?l?l?d?d">
+        </label>
+        <p class="hint">支持 ?l ?u ?d ?s ?a ?h ?H ?1–?4 和字面 ?（写作 ??），不支持 ?b 原始字节。</p>
+      </div>
+      <div class="hc-custom-grid">
+        <label><span class="field-label">自定义字符集 1 · ?1</span><input class="field" id="custom-1" type="text" autocomplete="off" spellcheck="false" placeholder="例如 ?l?d 或 abc123"></label>
+        <label><span class="field-label">自定义字符集 2 · ?2</span><input class="field" id="custom-2" type="text" autocomplete="off" spellcheck="false" placeholder="可留空"></label>
+        <label><span class="field-label">自定义字符集 3 · ?3</span><input class="field" id="custom-3" type="text" autocomplete="off" spellcheck="false" placeholder="可留空"></label>
+        <label><span class="field-label">自定义字符集 4 · ?4</span><input class="field" id="custom-4" type="text" autocomplete="off" spellcheck="false" placeholder="可留空"></label>
+      </div>
+      <p id="custom-summary" class="hint">可输入普通字符或 HashCat 字符集语法（如 ?l?d）。字面问号写 ??。</p>
+      <div class="hc-preview-grid">
+        <div class="hc-preview-card">
+          <span class="field-label">编译后的掩码</span>
+          <code id="mask-preview" class="hc-mask-code">—</code>
+        </div>
+        <div class="hc-preview-card">
+          <span class="field-label">候选空间</span>
+          <strong id="mask-count" class="hc-count">—</strong>
+          <span id="mask-length" class="hint">—</span>
+        </div>
+      </div>
+      <p id="mask-error" class="status error" role="status" aria-live="polite" hidden></p>
+      <div class="hc-presets">
+        <span class="hc-presets-label">快速模板</span>
+        <button type="button" data-mask-preset="0">6 位数字</button>
+        <button type="button" data-mask-preset="1">8 位小写</button>
+        <button type="button" data-mask-preset="2">4 小写 + 2 数字</button>
+        <button type="button" data-mask-preset="3">1 大写 + 6 小写 + 2 数字</button>
+        <button type="button" data-mask-preset="4">手机号 1 + 10 数字</button>
+        <button type="button" data-mask-preset="5">8 位字母数字</button>
+      </div>
+    </section>
+
+    <section class="panel" id="pane-regex" hidden>
+      <div class="hc-section-head">
+        <div>
+          <h2>正则约束</h2>
+          <p>用常用正则子集描述候选。支持字面量、字符类、分组、分支、量词和 \d \w \s；不支持环视、反向引用和 Unicode 属性。</p>
+        </div>
+        <button class="btn" id="regex-example" type="button">填入正则示例</button>
+      </div>
+      <label>
+        <span class="field-label">正则表达式</span>
+        <textarea id="regex-pattern" class="hc-regex-input" spellcheck="false" autocomplete="off" placeholder="[A-Z][a-z]{2}\d{2}"></textarea>
+      </label>
+      <div class="hc-token-row" aria-label="插入正则片段">
+        <span class="field-label">插入片段</span>
+        <button type="button" data-regex-token="[a-z]">[a-z]</button>
+        <button type="button" data-regex-token="[A-Z]">[A-Z]</button>
+        <button type="button" data-regex-token="[0-9]">[0-9]</button>
+        <button type="button" data-regex-token="[A-Za-z0-9]">[A-Za-z0-9]</button>
+        <button type="button" data-regex-token="\d">\d</button>
+        <button type="button" data-regex-token="\w">\w</button>
+        <button type="button" data-regex-token="{2}">{2}</button>
+        <button type="button" data-regex-token="{2,4}">{2,4}</button>
+        <button type="button" data-regex-token="?">?</button>
+        <button type="button" data-regex-token="+">+</button>
+        <button type="button" data-regex-token="*">*</button>
+        <button type="button" data-regex-token="|">|</button>
+        <button type="button" data-regex-token="(?:)" data-regex-cursor="3">(?:)</button>
+      </div>
+      <div class="field-row">
+        <label>
+          <span class="field-label">最大长度（用于截断 * / +）</span>
+          <input class="field" id="regex-max-length" type="number" min="1" max="64" value="16">
+        </label>
+        <div>
+          <span class="field-label">候选估算</span>
+          <strong id="regex-count" class="hc-count">—</strong>
+          <span id="regex-length-range" class="hint">—</span>
+        </div>
+      </div>
+      <p id="regex-status" class="status" role="status" aria-live="polite">输入一个正则表达式，或点击下方模板。</p>
+      <div class="hc-samples">
+        <span class="field-label">示例候选</span>
+        <div id="regex-samples" class="hc-sample-list"></div>
+      </div>
+      <div class="hc-presets">
+        <span class="hc-presets-label">快速模板</span>
+        <button type="button" data-regex-preset="[A-Za-z0-9]{8}">8 位字母数字</button>
+        <button type="button" data-regex-preset="[a-z]{6,10}">小写 6–10 位</button>
+        <button type="button" data-regex-preset="(?:19|20)\d{2}\d{4}">年份 + 4 数字</button>
+        <button type="button" data-regex-preset="1[3-9]\d{9}">中国大陆手机号</button>
+        <button type="button" data-regex-preset="(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])">日期 YYYYMMDD</button>
+        <button type="button" data-regex-preset="[A-Z][a-z]{2,8}\d{2,4}">姓名首字母 + 数字</button>
+        <button type="button" data-regex-preset="[a-z]{3,6}[._-]?[a-z]{3,6}\d{0,2}">双词组合</button>
+      </div>
+      <p class="hint">正则模式是候选生成器，不是 HashCat 的攻击模式。HashCat 本身不接受正则；可把这里筛出的结构改写为掩码或规则，再参考下方教程执行。点号 <code>.</code> 匹配可打印 ASCII，<code>*</code> / <code>+</code> 按“最大长度”截断。</p>
+    </section>
+
+    <section class="panel">
+      <details class="hc-constraint-details" open>
+        <summary>
+          <span><strong>3. 密码特征约束</strong> <span class="chip">可选</span></span>
+          <span class="hc-summary-hint">按已知内容缩小候选</span>
+        </summary>
+        <div class="hc-constraint-body">
+          <p class="hint">这些条件在候选生成后逐个过滤，可以表达“必须含数字”“必须含某个日期”等已知线索。过滤发生在浏览器内，不会上传；代价是候选计数仍按过滤前显示。</p>
+          <div class="field-row">
+            <label><span class="field-label">最小长度</span><input class="field" id="constraint-min" type="number" min="0" max="64" placeholder="不限"></label>
+            <label><span class="field-label">最大长度</span><input class="field" id="constraint-max" type="number" min="0" max="64" placeholder="不限"></label>
+          </div>
+          <div class="hc-check-grid">
+            <label><input id="constraint-lower" type="checkbox"> 至少 1 个小写字母</label>
+            <label><input id="constraint-upper" type="checkbox"> 至少 1 个大写字母</label>
+            <label><input id="constraint-digit" type="checkbox"> 至少 1 个数字</label>
+            <label><input id="constraint-symbol" type="checkbox"> 至少 1 个符号</label>
+          </div>
+          <div class="field-row">
+            <label>
+              <span class="field-label">必须包含子串（每行一个）</span>
+              <textarea id="constraint-contains" class="hc-contains-input" spellcheck="false" placeholder="例如&#10;2024&#10;admin"></textarea>
+            </label>
+            <div>
+              <label>
+                <span class="field-label">子串匹配方式</span>
+                <select id="constraint-contains-mode">
+                  <option value="any" selected>任一子串</option>
+                  <option value="all">全部子串</option>
+                </select>
+              </label>
+              <label class="hc-inline-check"><input id="constraint-ignore-case" type="checkbox"> 忽略大小写</label>
+            </div>
+          </div>
+          <div class="field-row">
+            <label><span class="field-label">必须包含任一字符</span><input class="field" id="constraint-require-any" type="text" autocomplete="off" spellcheck="false" placeholder="例如 !@#"></label>
+            <label><span class="field-label">必须包含全部字符</span><input class="field" id="constraint-require-all" type="text" autocomplete="off" spellcheck="false" placeholder="例如 ab1"></label>
+            <label><span class="field-label">不允许出现的字符</span><input class="field" id="constraint-exclude" type="text" autocomplete="off" spellcheck="false" placeholder="例如 xyz"></label>
+          </div>
+          <p id="constraint-summary" class="hint" role="status" aria-live="polite">未启用特征约束：将尝试攻击模式生成的全部候选。</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel">
+      <div class="hc-section-head">
+        <div>
+          <h2>4. 开始破解</h2>
+          <p id="run-summary">攻击：掩码攻击</p>
+        </div>
+        <label class="hc-thread-pick">
+          <span class="field-label">并行 Worker</span>
+          <select id="threads">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+        </label>
+      </div>
+      <div class="button-row">
+        <button class="btn btn-primary" id="start" type="button">开始破解</button>
+        <button class="btn" id="stop" type="button" disabled>停止</button>
+        <button class="btn" id="clear" type="button">清空结果</button>
+      </div>
+      <div id="progress-wrap" class="progress"><span id="progress"></span></div>
+      <p id="status" class="status" role="status" aria-live="polite">等待输入哈希和攻击设置。</p>
+      <div class="hc-stats">
+        <div><span>已测试</span><strong id="stat-tested">—</strong></div>
+        <div><span>速度</span><strong id="stat-speed">—</strong></div>
+        <div><span>已用时</span><strong id="stat-elapsed">—</strong></div>
+        <div><span>预计剩余</span><strong id="stat-eta">—</strong></div>
+        <div><span>命中</span><strong id="stat-matched">—</strong></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="hc-section-head">
+        <div>
+          <h2>破解结果</h2>
+          <p>命中的明文会显示在这里。结果只保存在当前页面，直到你复制、导出或关闭页面。</p>
+        </div>
+        <div class="button-row">
+          <button class="btn" id="copy-results" type="button">复制结果</button>
+          <button class="btn" id="download-results" type="button">导出 TXT</button>
+        </div>
+      </div>
+      <div id="results" class="hc-results"><div class="hc-empty">尚无结果。配置攻击方式并点击“开始破解”。</div></div>
+    </section>
+
+    <section class="panel">
+      <div class="hc-section-head">
+        <div>
+          <h2>对应 HashCat 命令</h2>
+          <p>根据当前设置生成一条可复制的命令。本页不会执行它；请在本机安装 HashCat 后参考教程运行。</p>
+        </div>
+        <button class="btn" id="copy-command" type="button">复制命令</button>
+      </div>
+      <pre id="hashcat-command" class="hc-command">hashcat ...</pre>
+      <p class="hint">命令中的 <code>hash.txt</code>、<code>dict.txt</code> 和规则文件是占位路径，请替换为你的实际文件。正则模式没有等价的 HashCat 攻击，命令仅示意先展开候选词。</p>
+    </section>
+
+    <section class="panel hc-docs" aria-labelledby="hashcat-docs-title">
+      <div class="hc-section-head">
+        <div>
+          <p class="kicker">HASHCAT NOTES</p>
+          <h2 id="hashcat-docs-title">HashCat 指令教程</h2>
+          <p>点击标题展开。示例以常见 Linux/macOS shell 为准；Windows PowerShell 中单引号通常同样有效。只在你拥有或获授权的哈希上使用。</p>
+        </div>
+        <div class="button-row">
+          <button class="btn" type="button" data-doc-expand>全部展开</button>
+          <button class="btn" type="button" data-doc-collapse>全部收起</button>
+        </div>
+      </div>
+
+      <details class="hc-doc" open>
+        <summary><span class="hc-doc-index">01</span><span class="hc-doc-title">命令结构与基本工作流</span><span class="hc-doc-tag">入门</span></summary>
+        <div class="hc-doc-body">
+          <p>HashCat 是离线的哈希恢复工具：它不会“解密”哈希，而是不断生成候选明文、计算哈希并与目标比较。一条命令至少需要三部分：哈希模式（<code>-m</code>）、攻击模式（<code>-a</code>）和候选来源（字典或掩码）。</p>
+          <div class="hc-code-block"><pre><code>hashcat -m &lt;哈希模式&gt; -a &lt;攻击模式&gt; hash.txt [字典或掩码]</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <ul>
+            <li><code>hash.txt</code>：每行一个目标哈希；也可以直接把哈希写在命令行里。</li>
+            <li><code>-m</code>：目标哈希算法，例如 MD5 是 0、SHA-256 是 1400。模式选错通常表现为 <em>Token length exception</em> 或永远跑不出结果。</li>
+            <li><code>-a</code>：攻击模式，0 是字典、3 是掩码、6/7 是混合。</li>
+            <li>破解成功后，HashCat 默认把结果写入当前目录的 <code>hashcat.potfile</code>；再次运行前可用 <code>--show</code> 查看已有结果。</li>
+          </ul>
+          <div class="hc-code-block"><pre><code># MD5 + 字典
+hashcat -m 0 -a 0 hash.txt rockyou.txt
+
+# MD5 + 掩码：6 位小写字母 + 2 位数字
+hashcat -m 0 -a 3 hash.txt '?l?l?l?l?l?l?d?d'
+
+# 查看已破解结果
+hashcat -m 0 hash.txt --show
+
+# 查看尚未破解的哈希
+hashcat -m 0 hash.txt --left</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note">本页是浏览器端的候选生成与验证工具，不是 HashCat 的前端；它不能调用 GPU，也不会执行你复制的命令。浏览器适合小空间、字典和规则验证，真正的 HashCat 在 GPU 上通常快几个数量级。更多规则、模式与示例见 <a href="https://hashcat.net/wiki/" target="_blank" rel="noopener noreferrer">hashcat wiki</a>。</p>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">02</span><span class="hc-doc-title">哈希模式 -m：先选对算法</span><span class="hc-doc-tag">必读</span></summary>
+        <div class="hc-doc-body">
+          <p>先用文件类型、来源系统或哈希长度判断算法；不确定时用 <code>hashcat -hh</code> 搜索模式，或使用 <code>hashid</code> 等辅助工具。常见模式如下：</p>
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>-m</th><th>算法</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>0</td><td>MD5</td><td>32 位十六进制，无 salt</td></tr>
+              <tr><td>100</td><td>SHA-1</td><td>40 位十六进制，无 salt</td></tr>
+              <tr><td>1400</td><td>SHA-256</td><td>64 位十六进制，无 salt</td></tr>
+              <tr><td>1700</td><td>SHA-512</td><td>128 位十六进制，无 salt</td></tr>
+              <tr><td>1000</td><td>NTLM</td><td>Windows 账户哈希，32 位十六进制，与 MD5 外观相同</td></tr>
+              <tr><td>3200</td><td>bcrypt</td><td><code>$2a$</code> / <code>$2b$</code> / <code>$2y$</code>，成本越高越慢</td></tr>
+              <tr><td>10 / 20</td><td>md5($pass.$salt) / md5($salt.$pass)</td><td>带固定 salt 的 MD5，命令中通常写 <code>hash:salt</code></td></tr>
+              <tr><td>110 / 120</td><td>sha1($pass.$salt) / sha1($salt.$pass)</td><td>带固定 salt 的 SHA-1</td></tr>
+              <tr><td>5500 / 5600</td><td>NetNTLMv1 / NetNTLMv2</td><td>网络认证捕获，格式与 NTLM 不同</td></tr>
+              <tr><td>22000</td><td>WPA-PBKDF2-PMKID+EAPOL</td><td>Wi‑Fi 握手，通常需要 GPU</td></tr>
+              <tr><td>13100 / 18200</td><td>Kerberos TGS-REP / AS-REP</td><td>域环境票据</td></tr>
+            </tbody>
+          </table></div>
+          <div class="hc-code-block"><pre><code># 查看某个模式的示例哈希和格式
+hashcat --example-hashes -m 3200
+
+# 在完整帮助中搜索模式（-hh 会列出哈希模式）
+hashcat -hh | grep -i -E 'sha256|ntlm|bcrypt'</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note">本页只处理无 salt 的 MD5 / SHA-1 / SHA-256 / SHA-512 / NTLM 和 bcrypt。带 salt、WPA、Kerberos 等模式请使用完整 HashCat，并在教程对应位置查阅格式。</p>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">03</span><span class="hc-doc-title">攻击模式 -a：字典、组合、掩码与混合</span><span class="hc-doc-tag">核心</span></summary>
+        <div class="hc-doc-body">
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>-a</th><th>模式</th><th>候选来源</th><th>典型用途</th></tr></thead>
+            <tbody>
+              <tr><td>0</td><td>Straight（字典）</td><td>一个字典文件，可加规则</td><td>常见密码、泄露字典、规则变形</td></tr>
+              <tr><td>1</td><td>Combination（组合）</td><td>两个字典逐词拼接</td><td>姓 + 名、词 + 词</td></tr>
+              <tr><td>3</td><td>Brute-force / Mask</td><td>掩码</td><td>已知长度与字符范围</td></tr>
+              <tr><td>6</td><td>Hybrid Wordlist + Mask</td><td>字典词 + 掩码后缀</td><td>admin00、password2024</td></tr>
+              <tr><td>7</td><td>Hybrid Mask + Wordlist</td><td>掩码前缀 + 字典词</td><td>2024admin、!password</td></tr>
+            </tbody>
+          </table></div>
+          <div class="hc-code-block"><pre><code># 字典
+hashcat -m 0 -a 0 hash.txt dict.txt
+
+# 字典 + best64 规则
+hashcat -m 0 -a 0 hash.txt dict.txt -r rules/best64.rule
+
+# 两个字典组合：left.txt 的每个词拼接 right.txt 的每个词
+hashcat -m 0 -a 1 hash.txt left.txt right.txt
+
+# 掩码：1 位大写 + 4 位小写 + 2 位数字
+hashcat -m 0 -a 3 hash.txt '?u?l?l?l?l?d?d'
+
+# 混合：字典词 + 2 位数字后缀
+hashcat -m 0 -a 6 hash.txt dict.txt '?d?d'
+
+# 混合：2 位数字前缀 + 字典词
+hashcat -m 0 -a 7 hash.txt '?d?d' dict.txt</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p>选择顺序通常是从低成本到高成本：先字典 + 常用规则，再针对已知结构用掩码或混合，最后才考虑扩大掩码空间。每次运行前先确认 <code>--show</code> 是否已有结果。</p>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">04</span><span class="hc-doc-title">掩码语法与自定义字符集</span><span class="hc-doc-tag">-a 3</span></summary>
+        <div class="hc-doc-body">
+          <p>掩码按位置描述字符集合。每个 <code>?</code> 标记占一个位置；字面问号写成 <code>??</code>。在 shell 中建议用单引号包住掩码，避免 <code>?</code> 被通配符展开。</p>
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>标记</th><th>字符集</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td><code>?l</code></td><td>a–z</td><td>26 个小写字母</td></tr>
+              <tr><td><code>?u</code></td><td>A–Z</td><td>26 个大写字母</td></tr>
+              <tr><td><code>?d</code></td><td>0–9</td><td>10 个数字</td></tr>
+              <tr><td><code>?s</code></td><td>空格与标点</td><td>常见特殊字符</td></tr>
+              <tr><td><code>?a</code></td><td>?l + ?u + ?d + ?s</td><td>全部 95 个可打印 ASCII 字符</td></tr>
+              <tr><td><code>?b</code></td><td>0x00–0xff</td><td>原始字节；本页不支持</td></tr>
+              <tr><td><code>?h</code> / <code>?H</code></td><td>0–9a–f / 0–9A–F</td><td>十六进制字符</td></tr>
+              <tr><td><code>?1</code>–<code>?4</code></td><td>自定义</td><td>配合 <code>-1</code>–<code>-4</code> 定义</td></tr>
+            </tbody>
+          </table></div>
+          <div class="hc-code-block"><pre><code># 8 位小写字母
+hashcat -m 0 -a 3 hash.txt '?l?l?l?l?l?l?l?l'
+
+# 4 位小写 + 2 位数字
+hashcat -m 0 -a 3 hash.txt '?l?l?l?l?d?d'
+
+# 自定义字符集 1 = 小写 + 数字，重复 8 位
+hashcat -m 0 -a 3 -1 '?l?d' hash.txt '?1?1?1?1?1?1?1?1'
+
+# 两个自定义字符集：4 位字母 + 2 位数字
+hashcat -m 0 -a 3 -1 '?l' -2 '?d' hash.txt '?1?1?1?1?2?2'
+
+# 手机号：1 开头 + 10 位数字
+hashcat -m 0 -a 3 hash.txt '1?d?d?d?d?d?d?d?d?d?d'
+
+# 只预览生成的候选，不计算哈希
+hashcat -a 3 --stdout '?l?l?d' | head</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p>掩码不表达“分支”。例如年份 19xx 或 20xx 需要分别运行两次，或使用 <code>-a 6</code> 把年份放进字典。递增长度可用 <code>-i</code>：</p>
+          <div class="hc-code-block"><pre><code># 尝试 4–8 位小写字母，长度递增
+hashcat -m 0 -a 3 -i --increment-min 4 --increment-max 8 hash.txt '?l?l?l?l?l?l?l?l'
+
+# 估算掩码空间（不计算哈希）
+hashcat --keyspace -a 3 '?l?l?l?l?d?d'</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note">本页的“可视化构建器”会把块编译成同样的掩码；自定义字符集支持 <code>?l?d</code> 这样的写法。候选空间会随位数指数增长，浏览器请优先缩小范围。</p>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">05</span><span class="hc-doc-title">字典、规则与混合攻击</span><span class="hc-doc-tag">-a 0 / 6 / 7</span></summary>
+        <div class="hc-doc-body">
+          <p>字典攻击把文件里的每一行当作候选明文。规则（rules）在不改变字典文件的情况下，对每个词做变形，例如转小写、首字母大写、追加数字、替换字符。HashCat 自带 <code>rules/</code> 目录，常见的有 <code>best64.rule</code>、<code>dive.rule</code>、<code>rockyou-30000.rule</code>。</p>
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>规则</th><th>含义</th><th>示例（password →）</th></tr></thead>
+            <tbody>
+              <tr><td><code>:</code></td><td>不做变换</td><td>password</td></tr>
+              <tr><td><code>l</code></td><td>全部小写</td><td>password</td></tr>
+              <tr><td><code>u</code></td><td>全部大写</td><td>PASSWORD</td></tr>
+              <tr><td><code>c</code></td><td>首字母大写，其余小写</td><td>Password</td></tr>
+              <tr><td><code>r</code></td><td>反转</td><td>drowssap</td></tr>
+              <tr><td><code>d</code></td><td>重复一次</td><td>passwordpassword</td></tr>
+              <tr><td><code>$1</code></td><td>末尾追加字符 1</td><td>password1</td></tr>
+              <tr><td><code>^1</code></td><td>开头插入字符 1</td><td>1password</td></tr>
+              <tr><td><code>sa@</code></td><td>把所有 a 替换成 @</td><td>p@ssword</td></tr>
+              <tr><td><code>se3</code></td><td>把所有 e 替换成 3</td><td>pass3rd</td></tr>
+              <tr><td><code>so0</code></td><td>把所有 o 替换成 0</td><td>passw0rd</td></tr>
+              <tr><td><code>ss$</code></td><td>把所有 s 替换成 $</td><td>pa$$word</td></tr>
+              <tr><td><code>@a</code></td><td>删除所有 a</td><td>pssword</td></tr>
+              <tr><td><code>[</code> / <code>]</code></td><td>删除首字符 / 尾字符</td><td>assword / passwor</td></tr>
+              <tr><td><code>k</code> / <code>K</code></td><td>交换前两个 / 后两个字符</td><td>apssword / passowrd</td></tr>
+              <tr><td><code>p2</code></td><td>末尾再追加 2 份当前词（共 3 份）</td><td>passwordpasswordpassword</td></tr>
+            </tbody>
+          </table></div>
+          <div class="hc-code-block"><pre><code># 字典 + best64 规则
+hashcat -m 0 -a 0 hash.txt dict.txt -r rules/best64.rule
+
+# 多个 -r 规则文件会做组合，而不是简单串联
+hashcat -m 0 -a 0 hash.txt dict.txt -r rules/best64.rule -r rules/toggles1.rule
+
+# 只预览规则生成的候选
+hashcat -a 0 --stdout dict.txt -r rules/best64.rule | head
+
+# 把候选导出为文件，供其他工具或本页使用
+hashcat -a 0 --stdout dict.txt -r rules/best64.rule > candidates.txt
+
+# 混合：词 + 2 位数字
+hashcat -m 0 -a 6 hash.txt dict.txt '?d?d'
+
+# 混合：2 位数字 + 词
+hashcat -m 0 -a 7 hash.txt '?d?d' dict.txt</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note">本页的规则是可视化近似：基础变换、反转、重复、1337、前后缀、追加字符和年份。它不复刻 HashCat 的全部规则语法；需要精确复现时，请使用 <code>-r</code> 规则文件。</p>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">06</span><span class="hc-doc-title">常用参数：性能、输出与会话</span><span class="hc-doc-tag">参数表</span></summary>
+        <div class="hc-doc-body">
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>参数</th><th>作用</th><th>建议</th></tr></thead>
+            <tbody>
+              <tr><td><code>-m &lt;N&gt;</code></td><td>哈希模式</td><td>先用 <code>--example-hashes</code> 确认格式</td></tr>
+              <tr><td><code>-a &lt;N&gt;</code></td><td>攻击模式</td><td>0 字典、1 组合、3 掩码、6/7 混合</td></tr>
+              <tr><td><code>-r &lt;file&gt;</code></td><td>规则文件</td><td>可从 best64 开始</td></tr>
+              <tr><td><code>-w 1–5</code></td><td>工作负载配置</td><td>桌面可先用 3，长时间运行注意散热</td></tr>
+              <tr><td><code>-O</code></td><td>启用优化内核</td><td>更快，但可能限制最大密码长度</td></tr>
+              <tr><td><code>-b</code></td><td>基准测试</td><td>先测目标模式的实际速度</td></tr>
+              <tr><td><code>-I</code></td><td>查看后端设备</td><td>确认 GPU/CPU 是否被识别</td></tr>
+              <tr><td><code>--status</code></td><td>显示运行状态</td><td>长任务建议开启</td></tr>
+              <tr><td><code>--status-timer=N</code></td><td>状态刷新秒数</td><td>例如 5</td></tr>
+              <tr><td><code>-o out.txt</code></td><td>把命中写入文件</td><td>便于后续处理</td></tr>
+              <tr><td><code>--outfile-format=2</code></td><td>输出格式只保留明文</td><td>按需选择</td></tr>
+              <tr><td><code>--show</code></td><td>显示已破解</td><td>先查 potfile，避免重复劳动</td></tr>
+              <tr><td><code>--left</code></td><td>显示未破解</td><td>用于下一轮攻击</td></tr>
+              <tr><td><code>--remove</code></td><td>从哈希文件移除已破解</td><td>会修改输入文件，先备份</td></tr>
+              <tr><td><code>--username</code></td><td>忽略 <code>user:hash</code> 前缀</td><td>处理导出账号文件</td></tr>
+              <tr><td><code>--session &lt;name&gt;</code></td><td>命名会话</td><td>长任务与恢复</td></tr>
+              <tr><td><code>--restore</code></td><td>恢复会话</td><td>配合 <code>--session</code></td></tr>
+              <tr><td><code>--runtime=N</code></td><td>最多运行 N 秒</td><td>限时尝试</td></tr>
+              <tr><td><code>--force</code></td><td>忽略部分警告</td><td>只在明确知道原因时使用</td></tr>
+            </tbody>
+          </table></div>
+          <div class="hc-code-block"><pre><code># 先测速度
+hashcat -b -m 0
+
+# 字典 + 规则，限制 10 分钟，命中写入文件
+hashcat -m 0 -a 0 hash.txt dict.txt -r rules/best64.rule --runtime=600 -o cracked.txt
+
+# 命名会话；Ctrl+C 中断后可恢复
+hashcat -m 0 -a 0 hash.txt dict.txt --session myrun
+hashcat --restore --session myrun
+
+# 只看已破解 / 未破解
+hashcat -m 0 hash.txt --show
+hashcat -m 0 hash.txt --left</code></pre><button class="hc-copy" type="button">复制</button></div>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">07</span><span class="hc-doc-title">结果管理、potfile 与恢复</span><span class="hc-doc-tag">运维</span></summary>
+        <div class="hc-doc-body">
+          <p>HashCat 默认把成功结果写入 <code>hashcat.potfile</code>。这是一份明文记录，可能包含敏感信息；在共享机器上应指定私有路径或及时清理。默认情况下，同一个哈希再次运行会直接跳过，因为 potfile 已记录。</p>
+          <div class="hc-code-block"><pre><code># 指定 potfile 与输出文件
+hashcat -m 0 -a 0 hash.txt dict.txt --potfile-path ./case.potfile -o cracked.txt
+
+# 查看某个 potfile 中的结果
+hashcat -m 0 hash.txt --show --potfile-path ./case.potfile
+
+# 临时忽略 potfile（不读取也不写入）
+hashcat -m 0 -a 0 hash.txt dict.txt --potfile-disable
+
+# 恢复上次中断的命名会话
+hashcat --restore --session myrun
+
+# 将已破解结果输出为纯文本（格式 2 = plain）
+hashcat -m 0 hash.txt --show --outfile-format=2 --outfile results.txt
+
+# 较新版本也支持 JSON 输出；以本机 hashcat --help 为准
+hashcat -m 0 hash.txt --show --outfile-json --outfile results.json</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note"><code>--remove</code> 会从哈希文件中删除已破解行，属于破坏性操作；先复制一份原始文件。不要把 potfile、字典或结果上传到不可信位置。</p>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">08</span><span class="hc-doc-title">性能、硬件与推荐工作流</span><span class="hc-doc-tag">效率</span></summary>
+        <div class="hc-doc-body">
+          <p>HashCat 的核心优势是把大量候选并行交给 GPU。CPU 也能跑，但速度通常低几个数量级。影响速度的主要因素：哈希算法、GPU 型号、驱动/OpenCL 运行时、<code>-w</code> 工作负载、规则复杂度、掩码长度和候选空间。</p>
+          <ul>
+            <li>先 <code>hashcat -b -m &lt;模式&gt;</code> 测实际速度，再决定候选空间是否现实。</li>
+            <li>从字典 + <code>best64</code> 开始；再针对已知结构做混合攻击。</li>
+            <li>掩码每增加一位，空间乘以字符集大小；优先缩小字符集，而不是盲目加长。</li>
+            <li>长任务使用 <code>--session</code> 与 <code>--restore</code>，并定期用 <code>--show</code> 检查结果。</li>
+            <li>bcrypt、WPA、Kerberos 等高成本模式需要更多算力；先评估是否值得。</li>
+          </ul>
+          <div class="hc-code-block"><pre><code># 推荐的最小工作流
+hashcat --show -m 0 hash.txt
+hashcat -b -m 0
+hashcat -m 0 -a 0 hash.txt dict.txt -r rules/best64.rule --status --status-timer=5
+hashcat -m 0 -a 6 hash.txt dict.txt '?d?d' --status
+hashcat -m 0 hash.txt --show</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note">浏览器的 Web Crypto 和 Web Worker 适合验证小规模候选，但没有 GPU 加速。同样的候选空间，真正的 HashCat 可能只需几秒到几分钟，而本页可能需要很久；请以“小空间、字典、已知结构”为主。</p>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">09</span><span class="hc-doc-title">本页操作与 HashCat 命令对照</span><span class="hc-doc-tag">对照表</span></summary>
+        <div class="hc-doc-body">
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>本页操作</th><th>HashCat 等价写法</th><th>说明</th></tr></thead>
+            <tbody>
+              <tr><td>可视化掩码</td><td><code>-a 3 '?l?l?l?l?d?d'</code></td><td>块的顺序就是掩码位置顺序</td></tr>
+              <tr><td>自定义字符集 1</td><td><code>-1 '?l?d' '?1?1?1?1'</code></td><td>本页把 <code>?1</code> 作为块类型</td></tr>
+              <tr><td>字典 + 规则</td><td><code>-a 0 dict.txt -r best64.rule</code></td><td>本页规则为可视化近似</td></tr>
+              <tr><td>混合 · 词后拼接</td><td><code>-a 6 dict.txt '?d?d'</code></td><td>word + mask</td></tr>
+              <tr><td>混合 · 词前拼接</td><td><code>-a 7 '?d?d' dict.txt</code></td><td>mask + word</td></tr>
+              <tr><td>正则约束</td><td>没有直接模式</td><td>先展开为候选词，再 <code>-a 0 candidates.txt</code></td></tr>
+              <tr><td>必须包含数字/子串</td><td>没有直接参数</td><td>用更精确的掩码/规则表达，或先过滤候选</td></tr>
+            </tbody>
+          </table></div>
+          <p>上方“对应 HashCat 命令”面板会根据当前设置生成可复制命令。它不执行命令，也不会自动创建 <code>hash.txt</code> 或字典文件。正则模式没有 HashCat 等价攻击，因为 HashCat 的候选来源是字典、规则、掩码和组合，而不是正则引擎；如需把正则结构交给 HashCat，请先把候选词导出或改写成掩码/规则。</p>
+          <div class="hc-code-block"><pre><code># 本页做小范围验证，真正的大规模尝试交给 HashCat
+hashcat -m 0 -a 3 hash.txt '?u?l?l?l?l?d?d'
+hashcat -m 0 -a 0 hash.txt dict.txt -r rules/best64.rule
+hashcat -m 0 -a 6 hash.txt dict.txt '?d?d'</code></pre><button class="hc-copy" type="button">复制</button></div>
+        </div>
+      </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">10</span><span class="hc-doc-title">常见错误与合法使用</span><span class="hc-doc-tag">排错</span></summary>
+        <div class="hc-doc-body">
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>现象</th><th>常见原因</th><th>处理</th></tr></thead>
+            <tbody>
+              <tr><td><code>Token length exception</code></td><td>模式与哈希长度不匹配，或把 salt/用户名一起当成了哈希</td><td>用 <code>--example-hashes -m &lt;模式&gt;</code> 对照格式；检查 <code>-m</code></td></tr>
+              <tr><td><code>No hashes loaded</code></td><td>哈希文件编码、BOM、空行、格式错误</td><td>保存为 UTF-8；每行一个哈希；去掉多余字段</td></tr>
+              <tr><td><code>Separator unmatched</code></td><td>该模式需要 <code>hash:salt</code> 等分隔格式</td><td>查阅模式示例；不要给无 salt 模式加冒号</td></tr>
+              <tr><td><code>Exhausted</code></td><td>候选空间耗尽仍未命中</td><td>换字典/规则/掩码；先用 <code>--show</code> 确认是否已破解</td></tr>
+              <tr><td>一直显示已破解/没有运行</td><td>potfile 已有记录</td><td>用 <code>--show</code> 查看，或临时 <code>--potfile-disable</code></td></tr>
+              <tr><td><code>-O</code> 后长密码跑不到</td><td>优化内核限制了最大长度</td><td>去掉 <code>-O</code>，或缩短掩码</td></tr>
+              <tr><td>OpenCL/驱动报错</td><td>驱动、运行时或设备选择问题</td><td>用 <code>-I</code> 查看设备；更新驱动；必要时再考虑 <code>--force</code></td></tr>
+              <tr><td>PowerShell 中掩码被展开</td><td>双引号中的 <code>?</code> 或变量被 shell 处理</td><td>使用单引号；检查 <code>$</code> 变量</td></tr>
+              <tr><td>bcrypt/WPA 极慢</td><td>算法本身计算成本高</td><td>先测速；优先字典/规则；考虑 GPU</td></tr>
+            </tbody>
+          </table></div>
+          <p><strong>合法与安全：</strong>只对你有权测试的哈希使用破解工具，例如自己的账户、授权渗透测试、离线取证或 CTF。不要用它尝试登录他人系统、绕过访问控制或处理来源不明的数据。HashCat 是离线工具；对在线服务的暴力尝试既低效也可能违法。妥善保护哈希、字典、potfile 和结果文件。</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel hc-boundary">
+      <h2>适用范围与边界</h2>
+      <div class="hc-boundary-grid">
+        <div>
+          <h3>本页支持</h3>
+          <ul>
+            <li>无 salt 的 MD5、SHA-1、SHA-256、SHA-512、NTLM 和 bcrypt 验证。</li>
+            <li>掩码、字典 + 规则、字典/掩码混合、正则子集生成。</li>
+            <li>长度、字符类型、必须包含/排除等候选过滤。</li>
+            <li>本地 Web Worker 并行；可随时停止；结果可复制或导出。</li>
+          </ul>
+        </div>
+        <div>
+          <h3>不支持</h3>
+          <ul>
+            <li>带 salt、WPA、Kerberos、NetNTLM 等需要额外字段的模式。</li>
+            <li>HashCat 的完整规则语法、<code>?b</code> 原始字节、GPU/OpenCL、分布式破解。</li>
+            <li>环视、反向引用、Unicode 属性类等正则特性。</li>
+            <li>候选按 UTF-8 文本处理；非 ASCII 字符与 HashCat 的原始字节掩码可能有差异。</li>
+            <li>超过 5 亿个候选的掩码/正则空间；混合和字典没有固定上限，但会边读边跑。</li>
+          </ul>
+        </div>
+        <div>
+          <h3>安全边界</h3>
+          <ul>
+            <li>哈希、字典、候选和结果只在本页内存中处理，不上传、不写入服务器。</li>
+            <li>不读取未选择的本地文件；不生成 potfile；只有点击复制/导出才会产生副本。</li>
+            <li>页面可离线使用；没有远程脚本、字体或 API。</li>
+          </ul>
+        </div>
+      </div>
+      <p class="hc-note">HashCat 是其作者的项目名称；本页是 SimplerForensics 的浏览器端独立实现，不是官方前端，也不包含 HashCat 二进制。仅用于你拥有或获授权的哈希。如果只需要简单的本地字典匹配，也可以使用 <a href="../ciphertext/index.html">密文字典匹配</a>。</p>
+    </section>
+
+    <footer class="tool-footer">版权所有 Star Rain (GYY)</footer>
+  </main>
+  <script defer src="../assets/back-to-top.js?v=20261018-1"></script>
+</body>
+</html>
