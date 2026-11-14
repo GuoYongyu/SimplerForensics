@@ -150,23 +150,99 @@ const sha1 = "b89eaac7e61417341b710b727768294d0e6a277b";
 const sha256 = "127e6fbfe24a750e72930c220a8e138275656b8e5d8f48f13fb50f3df1fe7b8f";
 const sha512 = "bdbea0a5e9e6e2f20f4e2b0d1e7b0f4e0b2d3c4a5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809";
 const bcrypt = "$2b$04$abcdefghijklmnopqrstuuJ5Yb0l7w5H6uP1v3sS7s9X0m8Q2c4G6";
+function byHash(parsed, hash) {
+  return Array.from(parsed.targets.values()).find((target) => target.hash === hash);
+}
+
 const parsed = core.parseHashLines([md5, sha1, sha256, sha512, bcrypt, "not-a-hash", ""].join("\n"), "AUTO");
 assert.equal(parsed.targets.size, 5);
-assert.equal(parsed.targets.get(md5), "MD5");
-assert.equal(parsed.targets.get(sha1), "SHA1");
-assert.equal(parsed.targets.get(sha256), "SHA256");
-assert.equal(parsed.targets.get(sha512), "SHA512");
-assert.equal(parsed.targets.get(bcrypt), "BCRYPT");
+assert.equal(byHash(parsed, md5).mode, "MD5");
+assert.equal(byHash(parsed, sha1).mode, "SHA1");
+assert.equal(byHash(parsed, sha256).mode, "SHA256");
+assert.equal(byHash(parsed, sha512).mode, "SHA512");
+assert.equal(byHash(parsed, bcrypt).mode, "BCRYPT");
 assert.equal(parsed.invalid.length, 1);
 assert.equal(parsed.invalid[0].line, 6);
 
 const ntlmParsed = core.parseHashLines(md5, "NTLM");
-assert.equal(ntlmParsed.targets.get(md5), "NTLM");
+assert.equal(byHash(ntlmParsed, md5).mode, "NTLM");
 const wrongMode = core.parseHashLines(md5, "SHA1");
 assert.equal(wrongMode.targets.size, 0);
 assert.equal(wrongMode.invalid.length, 1);
 const duplicate = core.parseHashLines([md5, md5.toUpperCase()].join("\n"), "MD5");
 assert.equal(duplicate.targets.size, 1);
+
+// Generic salted modes: per-line salt and a global salt fallback.
+const saltedAfter = core.parseHashLines(md5 + ":s1", "MD5_SALT_AFTER");
+assert.equal(saltedAfter.targets.size, 1);
+assert.equal(Array.from(saltedAfter.targets.values())[0].salt, "s1");
+assert.equal(Array.from(saltedAfter.targets.values())[0].saltPosition, "after");
+
+const saltedBeforeGlobal = core.parseHashLines(md5, "MD5_SALT_BEFORE", "user@example.com");
+assert.equal(saltedBeforeGlobal.targets.size, 1);
+assert.equal(Array.from(saltedBeforeGlobal.targets.values())[0].salt, "user@example.com");
+assert.equal(Array.from(saltedBeforeGlobal.targets.values())[0].saltPosition, "before");
+
+const saltedMissing = core.parseHashLines(md5, "MD5_SALT_AFTER");
+assert.equal(saltedMissing.targets.size, 0);
+assert.equal(saltedMissing.invalid.length, 1);
+assert.match(saltedMissing.invalid[0].reason, /hash:salt/);
+
+// Windows NetNTLMv2 and DCC2 formats.
+const netntlmLine = "User::DOMAIN:1122334455667788:35af6750aacb513b7b9e44ae4b60fbf4:0101000000000000aabbccddeeff00112233445566778899";
+const netntlmParsed = core.parseHashLines(netntlmLine, "AUTO");
+const netntlmTarget = Array.from(netntlmParsed.targets.values())[0];
+assert.equal(netntlmTarget.mode, "NETNTLMv2");
+assert.equal(netntlmTarget.username, "User");
+assert.equal(netntlmTarget.domain, "DOMAIN");
+assert.equal(netntlmTarget.challenge, "1122334455667788");
+
+const dcc2Line = "$DCC2$10240#Administrator#4c253e4b65c007a8cd683ea57bc43c76";
+const dcc2Parsed = core.parseHashLines(dcc2Line, "AUTO");
+const dcc2Target = Array.from(dcc2Parsed.targets.values())[0];
+assert.equal(dcc2Target.mode, "DCC2");
+assert.equal(dcc2Target.username, "Administrator");
+assert.equal(dcc2Target.iterations, 10240);
+
+const windowsCombined = core.parseHashLines([
+  "\uFEFF" + netntlmLine,
+  dcc2Line
+].join("\r\n"), "AUTO");
+assert.equal(windowsCombined.targets.size, 2);
+
+// HMAC-MD5 and DCC2 intermediate vectors.
+assert.equal(
+  Buffer.from(core.hmacMd5(Buffer.from("key"), Buffer.from("The quick brown fox jumps over the lazy dog"))).toString("hex"),
+  "80070713463e7749b90c2dc24911e275"
+);
+const ntHashBytes = core.hexToBytes(core.md4(core.utf16leBytes("password")));
+const dcc2Salt = core.utf16leBytes("administrator");
+const dcc2Secret = core.hexToBytes(core.md4(core.concatBytes(ntHashBytes, dcc2Salt)));
+assert.equal(
+  crypto.pbkdf2Sync(Buffer.from(dcc2Secret), Buffer.from(dcc2Salt), 10240, 16, "sha1").toString("hex"),
+  "4c253e4b65c007a8cd683ea57bc43c76"
+);
+const netntlmHash = crypto.createHmac("md5", Buffer.from(ntHashBytes))
+  .update(Buffer.from(core.utf16leBytes("USER" + "DOMAIN")))
+  .digest();
+const netntlmProof = crypto.createHmac("md5", netntlmHash)
+  .update(Buffer.concat([
+    Buffer.from("1122334455667788", "hex"),
+    Buffer.from("0101000000000000aabbccddeeff00112233445566778899", "hex")
+  ]))
+  .digest("hex");
+assert.equal(netntlmProof, "35af6750aacb513b7b9e44ae4b60fbf4");
+// Official hashcat 5600 self-test vector (ST_PASS = "hashcat").
+const officialNet = core.parseNetNTLMv2Line("0UL5G37JOI0SX::6VB1IS0KA74:ebe1afa18b7fbfa6:aab8bf8675658dd2a939458a1077ba08:010100000000000031c8aa092510945398b9f7b7dde1a9fb00000000f7876f2b04b700");
+assert.equal(officialNet.ok, true);
+const officialNt = core.hexToBytes(core.md4(core.utf16leBytes("hashcat")));
+const officialV2 = core.hmacMd5(officialNt, core.utf16leBytes(officialNet.target.username.toUpperCase() + officialNet.target.domain));
+const officialProof = core.hexOf(core.hmacMd5(officialV2, core.concatBytes(
+  core.hexToBytes(officialNet.target.challenge),
+  core.hexToBytes(officialNet.target.blob)
+)));
+assert.equal(officialProof, officialNet.target.proof);
+
 
 // --- hashcat command building --------------------------------------------
 const maskCommand = core.hashcatCommand({
@@ -189,6 +265,20 @@ const regexCommand = core.hashcatCommand({
   attack: "regex", modes: ["SHA256"], constraints: null, rules: {}
 });
 assert.match(regexCommand, /hashcat -m 1400 -a 0 hash\.txt candidates\.txt/);
+
+const saltedCommand = core.hashcatCommand({
+  attack: "dict", modes: ["MD5_SALT_AFTER"], constraints: null, rules: {}
+});
+assert.match(saltedCommand, /hashcat -m 10 -a 0 hash\.txt dict\.txt/);
+assert.match(saltedCommand, /hash:salt/);
+
+const windowsCommand = core.hashcatCommand({
+  attack: "dict", modes: ["NETNTLMv2", "DCC2"], constraints: null, rules: {}
+});
+assert.match(windowsCommand, /hashcat -m 5600 -a 0/);
+assert.match(windowsCommand, /hashcat -m 2100 -a 0/);
+assert.match(windowsCommand, /NetNTLMv2 行格式/);
+assert.match(windowsCommand, /DCC2 行格式/);
 
 // --- formatting -----------------------------------------------------------
 assert.equal(core.formatCount(0n), "0");

@@ -8,12 +8,12 @@
   <link rel="stylesheet" href="../assets/style.css?v=20261112-3">
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
   <link rel="stylesheet" href="../assets/typography.css?v=20261112-10">
-  <link rel="stylesheet" href="style.css?v=20261113-1">
+  <link rel="stylesheet" href="style.css?v=20261114-2">
   <script defer src="../assets/nav.js?v=20261113-1"></script>
   <script defer src="../assets/custom-select.js"></script>
   <script defer src="../ciphertext/bcrypt-source.js?v=20261113-1"></script>
-  <script defer src="hashcat-core.js?v=20261113-1"></script>
-  <script defer src="app.js?v=20261113-1"></script>
+  <script defer src="hashcat-core.js?v=20261114-2"></script>
+  <script defer src="app.js?v=20261114-3"></script>
 </head>
 <body>
   <header class="topbar">
@@ -27,11 +27,12 @@
       <div>
         <p class="kicker">03 / HASHCAT WORKBENCH</p>
         <h1>HashCat 破解工作台</h1>
-        <p>用可视化掩码、字典规则、混合攻击或正则约束生成候选，并在浏览器本地验证哈希。页面内置 HashCat 指令教程与命令对照；不调用 GPU，不上传哈希或字典，也不需要安装 HashCat。</p>
+        <p>用可视化掩码、字典规则、混合攻击或正则约束生成候选，并在浏览器本地验证无盐/带盐哈希、Windows NetNTLMv2 与 DCC2。页面内置 HashCat 指令教程与命令对照；不调用 GPU，不上传哈希或字典，也不需要安装 HashCat。</p>
       </div>
       <div class="hc-head-chips">
         <span class="chip">本地 Worker 验证</span>
         <span class="chip">掩码 / 字典 / 混合 / 正则</span>
+        <span class="chip">带盐 / Windows</span>
         <span class="chip">HashCat 指令教程</span>
       </div>
     </section>
@@ -40,7 +41,7 @@
       <div class="hc-section-head">
         <div>
           <h2>1. 目标哈希</h2>
-          <p>每行一个哈希。支持 MD5、SHA-1、SHA-256、SHA-512、NTLM 和 bcrypt；当前只验证无 salt 的常见格式。</p>
+          <p>每行一个哈希。支持无盐 MD5、SHA-1、SHA-256、SHA-512、NTLM、bcrypt，带盐的 MD5/SHA 模式，以及 Windows 的 NetNTLMv2 与 DCC2（MS-Cache v2）。</p>
         </div>
         <button class="btn" id="fill-example" type="button">填入示例</button>
       </div>
@@ -50,20 +51,48 @@
         <label>
           <span class="field-label">哈希模式</span>
           <select id="hash-mode">
-            <option value="AUTO" selected>自动检测（32 位十六进制按 MD5）</option>
-            <option value="MD5">MD5 · -m 0</option>
-            <option value="SHA1">SHA-1 · -m 100</option>
-            <option value="SHA256">SHA-256 · -m 1400</option>
-            <option value="SHA512">SHA-512 · -m 1700</option>
-            <option value="NTLM">NTLM · -m 1000</option>
-            <option value="BCRYPT">bcrypt · -m 3200</option>
+            <optgroup label="自动 / 无盐">
+              <option value="AUTO" selected>自动检测（32 位十六进制按 MD5）</option>
+              <option value="MD5">MD5 · -m 0</option>
+              <option value="SHA1">SHA-1 · -m 100</option>
+              <option value="SHA256">SHA-256 · -m 1400</option>
+              <option value="SHA512">SHA-512 · -m 1700</option>
+              <option value="NTLM">NTLM · -m 1000</option>
+              <option value="BCRYPT">bcrypt · -m 3200</option>
+            </optgroup>
+            <optgroup label="带盐（固定 Salt）">
+              <option value="MD5_SALT_AFTER">MD5($pass.$salt) · -m 10</option>
+              <option value="MD5_SALT_BEFORE">MD5($salt.$pass) · -m 20</option>
+              <option value="SHA1_SALT_AFTER">SHA-1($pass.$salt) · -m 110</option>
+              <option value="SHA1_SALT_BEFORE">SHA-1($salt.$pass) · -m 120</option>
+              <option value="SHA256_SALT_AFTER">SHA-256($pass.$salt) · -m 1410</option>
+              <option value="SHA256_SALT_BEFORE">SHA-256($salt.$pass) · -m 1420</option>
+              <option value="SHA512_SALT_AFTER">SHA-512($pass.$salt) · -m 1710</option>
+              <option value="SHA512_SALT_BEFORE">SHA-512($salt.$pass) · -m 1720</option>
+            </optgroup>
+            <optgroup label="Windows">
+              <option value="NETNTLMv2">NetNTLMv2 · -m 5600</option>
+              <option value="DCC2">MS-Cache v2 / DCC2 · -m 2100</option>
+            </optgroup>
           </select>
         </label>
         <div class="hc-mode-note">
           <span class="field-label">识别规则</span>
-          <p class="hint">32 位十六进制无法区分 MD5 与 NTLM，自动模式按 MD5 处理。bcrypt 使用固定成本，浏览器验证速度很慢，更适合小字典。</p>
+          <p class="hint">32 位十六进制无法区分 MD5 与 NTLM，自动模式按 MD5 处理。带盐和 Windows 格式请在下方确认写法；bcrypt 与 DCC2 的浏览器验证速度很慢，更适合小字典。</p>
         </div>
       </div>
+      <div id="salt-row" class="field-row hc-salt-row" hidden>
+        <label>
+          <span class="field-label">全局 Salt（可选）</span>
+          <input class="field" id="global-salt" type="text" autocomplete="off" spellcheck="false" placeholder="例如 user@example.com；未在哈希行写 :salt 时使用">
+        </label>
+        <div>
+          <span class="field-label">带盐写法</span>
+          <p class="hint">每行可写 <code>hash:salt</code>，优先使用行内 Salt；没有冒号时使用这里的全局 Salt。Salt 拼接在明文前还是后由所选模式决定。</p>
+        </div>
+      </div>
+      <p id="hash-format-hint" class="hint">无盐模式：每行只写哈希。带盐模式：hash:salt 或使用全局 Salt。Windows 的 NetNTLMv2 / DCC2 使用完整捕获行。</p>
+      <p class="hint">Windows 适配：自动处理 UTF-8 BOM、CRLF，并识别 UTF-16LE/BE BOM 字典；哈希和字典可直接使用记事本或 PowerShell 导出的 TXT 文件。</p>
       <p id="hash-summary" class="status" role="status" aria-live="polite">尚未输入哈希。可粘贴一个哈希，或点击右上角“填入示例”。</p>
     </section>
 
@@ -460,6 +489,9 @@ hashcat -m 0 hash.txt --left</code></pre><button class="hc-copy" type="button">�
               <tr><td>3200</td><td>bcrypt</td><td><code>$2a$</code> / <code>$2b$</code> / <code>$2y$</code>，成本越高越慢</td></tr>
               <tr><td>10 / 20</td><td>md5($pass.$salt) / md5($salt.$pass)</td><td>带固定 salt 的 MD5，命令中通常写 <code>hash:salt</code></td></tr>
               <tr><td>110 / 120</td><td>sha1($pass.$salt) / sha1($salt.$pass)</td><td>带固定 salt 的 SHA-1</td></tr>
+              <tr><td>1410 / 1420</td><td>sha256($pass.$salt) / sha256($salt.$pass)</td><td>带固定 salt 的 SHA-256</td></tr>
+              <tr><td>1710 / 1720</td><td>sha512($pass.$salt) / sha512($salt.$pass)</td><td>带固定 salt 的 SHA-512</td></tr>
+              <tr><td>2100</td><td>MS-Cache v2 (DCC2)</td><td>Windows 域缓存凭据，格式为 <code>$DCC2$10240#user#hash</code></td></tr>
               <tr><td>5500 / 5600</td><td>NetNTLMv1 / NetNTLMv2</td><td>网络认证捕获，格式与 NTLM 不同</td></tr>
               <tr><td>22000</td><td>WPA-PBKDF2-PMKID+EAPOL</td><td>Wi‑Fi 握手，通常需要 GPU</td></tr>
               <tr><td>13100 / 18200</td><td>Kerberos TGS-REP / AS-REP</td><td>域环境票据</td></tr>
@@ -470,7 +502,7 @@ hashcat --example-hashes -m 3200
 
 # 在完整帮助中搜索模式（-hh 会列出哈希模式）
 hashcat -hh | grep -i -E 'sha256|ntlm|bcrypt'</code></pre><button class="hc-copy" type="button">复制</button></div>
-          <p class="hc-note">本页只处理无 salt 的 MD5 / SHA-1 / SHA-256 / SHA-512 / NTLM 和 bcrypt。带 salt、WPA、Kerberos 等模式请使用完整 HashCat，并在教程对应位置查阅格式。</p>
+          <p class="hc-note">本页支持无盐 MD5 / SHA / NTLM / bcrypt、带固定 Salt 的 MD5 / SHA 模式（10/20、110/120、1410/1420、1710/1720），以及 Windows NetNTLMv2（5600）和 DCC2（2100）。NetNTLMv1、MS-Cache v1（DCC1）、WPA、Kerberos 等其他格式请使用完整 HashCat，并在教程对应位置查阅格式。</p>
         </div>
       </details>
 
@@ -695,6 +727,9 @@ hashcat -m 0 hash.txt --show</code></pre><button class="hc-copy" type="button">�
             <tbody>
               <tr><td>可视化掩码</td><td><code>-a 3 '?l?l?l?l?d?d'</code></td><td>块的顺序就是掩码位置顺序</td></tr>
               <tr><td>自定义字符集 1</td><td><code>-1 '?l?d' '?1?1?1?1'</code></td><td>本页把 <code>?1</code> 作为块类型</td></tr>
+              <tr><td>固定 Salt</td><td><code>-m 10</code> / <code>-m 20</code> 等</td><td>hash.txt 每行写 <code>hash:salt</code></td></tr>
+              <tr><td>Windows NetNTLMv2</td><td><code>-m 5600</code></td><td>完整 <code>user::domain:challenge:NTProofStr:blob</code></td></tr>
+              <tr><td>Windows DCC2</td><td><code>-m 2100</code></td><td><code>$DCC2$10240#user#hash</code></td></tr>
               <tr><td>字典 + 规则</td><td><code>-a 0 dict.txt -r best64.rule</code></td><td>本页规则为可视化近似</td></tr>
               <tr><td>混合 · 词后拼接</td><td><code>-a 6 dict.txt '?d?d'</code></td><td>word + mask</td></tr>
               <tr><td>混合 · 词前拼接</td><td><code>-a 7 '?d?d' dict.txt</code></td><td>mask + word</td></tr>
@@ -730,6 +765,74 @@ hashcat -m 0 -a 6 hash.txt dict.txt '?d?d'</code></pre><button class="hc-copy" t
           <p><strong>合法与安全：</strong>只对你有权测试的哈希使用破解工具，例如自己的账户、授权渗透测试、离线取证或 CTF。不要用它尝试登录他人系统、绕过访问控制或处理来源不明的数据。HashCat 是离线工具；对在线服务的暴力尝试既低效也可能违法。妥善保护哈希、字典、potfile 和结果文件。</p>
         </div>
       </details>
+
+      <details class="hc-doc">
+        <summary><span class="hc-doc-index">11</span><span class="hc-doc-title">带盐、Windows 格式与编码适配</span><span class="hc-doc-tag">salted / Windows</span></summary>
+        <div class="hc-doc-body">
+          <h3>固定 Salt 的 MD5 / SHA 模式</h3>
+          <p>固定 Salt 表示每条哈希有自己的 Salt 文本，但 Salt 不参与随机生成。HashCat 的哈希文件通常写成 <code>hash:salt</code>；Salt 拼在明文前还是后由模式编号决定。</p>
+          <div class="hc-table-wrap"><table class="hc-table">
+            <thead><tr><th>模式</th><th>-m</th><th>哈希文件写法</th></tr></thead>
+            <tbody>
+              <tr><td>MD5($pass.$salt)</td><td>10</td><td><code>hash:salt</code>，Salt 在明文后</td></tr>
+              <tr><td>MD5($salt.$pass)</td><td>20</td><td><code>hash:salt</code>，Salt 在明文前</td></tr>
+              <tr><td>SHA-1($pass.$salt)</td><td>110</td><td>同上，SHA-1</td></tr>
+              <tr><td>SHA-1($salt.$pass)</td><td>120</td><td>同上，SHA-1</td></tr>
+              <tr><td>SHA-256($pass.$salt)</td><td>1410</td><td>同上，SHA-256</td></tr>
+              <tr><td>SHA-256($salt.$pass)</td><td>1420</td><td>同上，SHA-256</td></tr>
+              <tr><td>SHA-512($pass.$salt)</td><td>1710</td><td>同上，SHA-512</td></tr>
+              <tr><td>SHA-512($salt.$pass)</td><td>1720</td><td>同上，SHA-512</td></tr>
+            </tbody>
+          </table></div>
+          <div class="hc-code-block"><pre><code># 带盐 MD5：hash.txt 中每行是 hash:salt
+hashcat -m 10 -a 0 hash.txt dict.txt
+
+# 带盐 SHA-256，Salt 在明文前
+hashcat -m 1420 -a 0 hash.txt dict.txt
+
+# 先确认格式和 Salt 是否被正确读入
+hashcat --example-hashes -m 10</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note">本页的“全局 Salt”只适用于固定 Salt 模式：哈希行写 <code>hash:salt</code> 时优先使用行内 Salt，否则使用全局值。HashCat 没有“全局 Salt”参数，复制命令前请把 Salt 写进 hash.txt 的每一行。</p>
+
+          <h3>Windows NetNTLMv2</h3>
+          <p>NetNTLMv2 是 Windows/AD 网络认证的挑战-响应值，不是本地 NTLM 哈希。它使用 ServerChallenge 和 Blob 作为“盐”的一部分，常见格式为：</p>
+          <div class="hc-code-block"><pre><code>user::domain:ServerChallenge:NTProofStr:Blob
+
+# 示例结构
+admin::WORKGROUP:1122334455667788:&lt;32 位 NTProofStr&gt;:0101000000000000...
+
+# HashCat 5600 官方自检向量（对应明文 hashcat）
+0UL5G37JOI0SX::6VB1IS0KA74:ebe1afa18b7fbfa6:aab8bf8675658dd2a939458a1077ba08:010100000000000031c8aa092510945398b9f7b7dde1a9fb00000000f7876f2b04b700</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <div class="hc-code-block"><pre><code># 使用完整的 NetNTLMv2 捕获行
+hashcat -m 5600 -a 0 hash.txt dict.txt</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p>NetNTLMv2 计算涉及 HMAC-MD5；本页在 Worker 中按目标逐条验证，目标很多时会明显变慢。NTLM（1000）是本地账户哈希，通常无盐；不要把两者混用。</p>
+
+          <h3>Windows DCC2 / MS-Cache v2</h3>
+          <p>DCC2 是 Windows Vista 之后缓存的域凭据，使用小写用户名作为 Salt，并对 MD4 中间值执行 10240 轮 PBKDF2-HMAC-SHA1。HashCat 模式为 2100，格式如下：</p>
+          <div class="hc-code-block"><pre><code># 对应 Administrator / password（Passlib 测试向量）
+$DCC2$10240#Administrator#4c253e4b65c007a8cd683ea57bc43c76
+
+hashcat -m 2100 -a 0 hash.txt dict.txt</code></pre><button class="hc-copy" type="button">复制</button></div>
+          <p class="hc-note">DCC2 每个候选都要执行 PBKDF2，浏览器版通常比 MD5/SHA 慢几个数量级；建议先用小字典或已知结构验证。DCC2 迭代次数高于 1,000,000 的样本本页不接受。</p>
+
+          <h3>Windows 文本与 PowerShell 适配</h3>
+          <ul>
+            <li>本页自动去掉哈希文本和字典中的 BOM，处理 CRLF，并识别带 BOM 的 UTF-16LE/BE 字典；记事本保存的 TXT 可以直接使用。</li>
+            <li>PowerShell 中掩码建议用单引号，例如 <code>'?l?l?d?d'</code>；双引号可能展开 <code>$</code> 变量，<code>?</code> 也可能被 shell 解释。</li>
+            <li>路径含空格时加引号；Windows 下使用 <code>.\hash.txt</code>、<code>.\dict.txt</code> 或完整路径。</li>
+            <li>哈希文件如果带 <code>user:hash</code> 前缀，HashCat 可加 <code>--username</code> 忽略用户名；本页的固定 Salt/Windows 格式请按页面提示写成对应格式。</li>
+            <li>不要用 Word 或富文本保存哈希/字典；使用纯文本 UTF-8。复制命令后先在本机 <code>hashcat --help</code> 确认版本支持的参数。</li>
+          </ul>
+          <div class="hc-code-block"><pre><code># PowerShell 示例
+hashcat.exe -m 5600 -a 0 .\hash.txt .\dict.txt
+hashcat.exe -m 2100 -a 0 .\hash.txt .\dict.txt -r .\rules\best64.rule
+hashcat.exe -m 0 -a 0 .\hashes.txt .\dict.txt --username
+
+# 查看已破解 / 未破解
+hashcat.exe -m 5600 .\hash.txt --show
+hashcat.exe -m 5600 .\hash.txt --left</code></pre><button class="hc-copy" type="button">复制</button></div>
+        </div>
+      </details>
     </section>
 
     <section class="panel hc-boundary">
@@ -739,6 +842,9 @@ hashcat -m 0 -a 6 hash.txt dict.txt '?d?d'</code></pre><button class="hc-copy" t
           <h3>本页支持</h3>
           <ul>
             <li>无 salt 的 MD5、SHA-1、SHA-256、SHA-512、NTLM 和 bcrypt 验证。</li>
+            <li>带固定 Salt 的 MD5/SHA 模式：10/20、110/120、1410/1420、1710/1720；支持 <code>hash:salt</code> 或全局 Salt。</li>
+            <li>Windows NetNTLMv2（5600）和 DCC2 / MS-Cache v2（2100）验证。</li>
+            <li>Windows 文本适配：自动处理 UTF-8 BOM、CRLF，并识别 UTF-16LE/BE BOM 字典。</li>
             <li>掩码、字典 + 规则、字典/掩码混合、正则子集生成。</li>
             <li>长度、字符类型、必须包含/排除等候选过滤。</li>
             <li>本地 Web Worker 并行；可随时停止；结果可复制或导出。</li>
@@ -747,7 +853,8 @@ hashcat -m 0 -a 6 hash.txt dict.txt '?d?d'</code></pre><button class="hc-copy" t
         <div>
           <h3>不支持</h3>
           <ul>
-            <li>带 salt、WPA、Kerberos、NetNTLM 等需要额外字段的模式。</li>
+            <li>NetNTLMv1、MS-Cache v1（DCC1）、WPA、Kerberos 等其他带 salt / 额外字段的模式。</li>
+            <li>DCC2 迭代次数超过 1,000,000 的格式；DCC2 在浏览器中通常很慢，建议只用小字典验证。</li>
             <li>HashCat 的完整规则语法、<code>?b</code> 原始字节、GPU/OpenCL、分布式破解。</li>
             <li>环视、反向引用、Unicode 属性类等正则特性。</li>
             <li>候选按 UTF-8 文本处理；非 ASCII 字符与 HashCat 的原始字节掩码可能有差异。</li>

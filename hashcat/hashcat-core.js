@@ -32,12 +32,22 @@
   var COUNT_CAP = 1e12;
 
   var MODES = {
-    MD5: { key: 'MD5', label: 'MD5', hashcat: 0, hexLength: 32 },
-    SHA1: { key: 'SHA1', label: 'SHA-1', hashcat: 100, hexLength: 40 },
-    SHA256: { key: 'SHA256', label: 'SHA-256', hashcat: 1400, hexLength: 64 },
-    SHA512: { key: 'SHA512', label: 'SHA-512', hashcat: 1700, hexLength: 128 },
-    NTLM: { key: 'NTLM', label: 'NTLM', hashcat: 1000, hexLength: 32 },
-    BCRYPT: { key: 'BCRYPT', label: 'bcrypt', hashcat: 3200 }
+    MD5: { key: 'MD5', label: 'MD5', hashcat: 0, hexLength: 32, group: 'unsalted', kind: 'unsalted', algorithm: 'MD5' },
+    SHA1: { key: 'SHA1', label: 'SHA-1', hashcat: 100, hexLength: 40, group: 'unsalted', kind: 'unsalted', algorithm: 'SHA1' },
+    SHA256: { key: 'SHA256', label: 'SHA-256', hashcat: 1400, hexLength: 64, group: 'unsalted', kind: 'unsalted', algorithm: 'SHA256' },
+    SHA512: { key: 'SHA512', label: 'SHA-512', hashcat: 1700, hexLength: 128, group: 'unsalted', kind: 'unsalted', algorithm: 'SHA512' },
+    NTLM: { key: 'NTLM', label: 'NTLM', hashcat: 1000, hexLength: 32, group: 'unsalted', kind: 'unsalted', algorithm: 'NTLM' },
+    BCRYPT: { key: 'BCRYPT', label: 'bcrypt', hashcat: 3200, group: 'unsalted', kind: 'bcrypt' },
+    MD5_SALT_AFTER: { key: 'MD5_SALT_AFTER', label: 'MD5($pass.$salt)', hashcat: 10, hexLength: 32, group: 'salted', kind: 'salted', algorithm: 'MD5', saltPosition: 'after' },
+    MD5_SALT_BEFORE: { key: 'MD5_SALT_BEFORE', label: 'MD5($salt.$pass)', hashcat: 20, hexLength: 32, group: 'salted', kind: 'salted', algorithm: 'MD5', saltPosition: 'before' },
+    SHA1_SALT_AFTER: { key: 'SHA1_SALT_AFTER', label: 'SHA-1($pass.$salt)', hashcat: 110, hexLength: 40, group: 'salted', kind: 'salted', algorithm: 'SHA1', saltPosition: 'after' },
+    SHA1_SALT_BEFORE: { key: 'SHA1_SALT_BEFORE', label: 'SHA-1($salt.$pass)', hashcat: 120, hexLength: 40, group: 'salted', kind: 'salted', algorithm: 'SHA1', saltPosition: 'before' },
+    SHA256_SALT_AFTER: { key: 'SHA256_SALT_AFTER', label: 'SHA-256($pass.$salt)', hashcat: 1410, hexLength: 64, group: 'salted', kind: 'salted', algorithm: 'SHA256', saltPosition: 'after' },
+    SHA256_SALT_BEFORE: { key: 'SHA256_SALT_BEFORE', label: 'SHA-256($salt.$pass)', hashcat: 1420, hexLength: 64, group: 'salted', kind: 'salted', algorithm: 'SHA256', saltPosition: 'before' },
+    SHA512_SALT_AFTER: { key: 'SHA512_SALT_AFTER', label: 'SHA-512($pass.$salt)', hashcat: 1710, hexLength: 128, group: 'salted', kind: 'salted', algorithm: 'SHA512', saltPosition: 'after' },
+    SHA512_SALT_BEFORE: { key: 'SHA512_SALT_BEFORE', label: 'SHA-512($salt.$pass)', hashcat: 1720, hexLength: 128, group: 'salted', kind: 'salted', algorithm: 'SHA512', saltPosition: 'before' },
+    NETNTLMv2: { key: 'NETNTLMv2', label: 'NetNTLMv2', hashcat: 5600, group: 'windows', kind: 'netntlmv2' },
+    DCC2: { key: 'DCC2', label: 'MS-Cache v2 (DCC2)', hashcat: 2100, group: 'windows', kind: 'dcc2' }
   };
 
   var HEX_LENGTH_MODE = { 32: 'MD5', 40: 'SHA1', 64: 'SHA256', 128: 'SHA512' };
@@ -256,6 +266,49 @@
       bytes[i * 2 + 1] = code >>> 8;
     }
     return md4(bytes);
+  }
+
+  function hexToBytes(hex) {
+    var value = String(hex || '').trim();
+    if (value.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(value)) throw new Error('无效的十六进制字节串');
+    var out = new Uint8Array(value.length / 2);
+    for (var i = 0; i < out.length; i++) out[i] = parseInt(value.slice(i * 2, i * 2 + 2), 16);
+    return out;
+  }
+
+  function utf16leBytes(text) {
+    var value = String(text);
+    var bytes = new Uint8Array(value.length * 2);
+    for (var i = 0; i < value.length; i++) {
+      var code = value.charCodeAt(i);
+      bytes[i * 2] = code & 255;
+      bytes[i * 2 + 1] = code >>> 8;
+    }
+    return bytes;
+  }
+
+  function concatBytes(left, right) {
+    var out = new Uint8Array(left.length + right.length);
+    out.set(left, 0);
+    out.set(right, left.length);
+    return out;
+  }
+
+  function hmacMd5(keyBytes, messageBytes) {
+    var key = keyBytes instanceof Uint8Array ? keyBytes : new Uint8Array(keyBytes);
+    var message = messageBytes instanceof Uint8Array ? messageBytes : new Uint8Array(messageBytes);
+    var block = 64;
+    if (key.length > block) key = hexToBytes(md5(key));
+    var ipad = new Uint8Array(block);
+    var opad = new Uint8Array(block);
+    ipad.fill(0x36);
+    opad.fill(0x5c);
+    for (var i = 0; i < key.length; i++) {
+      ipad[i] ^= key[i];
+      opad[i] ^= key[i];
+    }
+    var inner = hexToBytes(md5(concatBytes(ipad, message)));
+    return hexToBytes(md5(concatBytes(opad, inner)));
   }
 
   /* ------------------------------------------------------------------ *
@@ -809,37 +862,193 @@
 
   function isHex(value) { return /^[0-9a-f]+$/i.test(value); }
 
-  function detectMode(hash) {
-    if (BCRYPT_RE.test(hash)) return 'BCRYPT';
-    if (!isHex(hash)) return null;
-    return HEX_LENGTH_MODE[hash.length] || null;
+  function stripBom(text) {
+    var value = String(text || '');
+    return value.charCodeAt(0) === 0xFEFF ? value.slice(1) : value;
   }
 
-  function parseHashLines(text, selectedMode) {
+  function makeUnsaltedTarget(mode, hash) {
+    var definition = MODES[mode];
+    var value = String(hash).toLowerCase();
+    return { key: mode + '|' + value, mode: mode, kind: 'unsalted', algorithm: definition.algorithm, hash: value, display: value };
+  }
+
+  function makeSaltedTarget(mode, hash, salt) {
+    var definition = MODES[mode];
+    var value = String(hash).toLowerCase();
+    var saltValue = String(salt);
+    return {
+      key: mode + '|' + value + '|' + saltValue,
+      mode: mode,
+      kind: 'salted',
+      algorithm: definition.algorithm,
+      saltPosition: definition.saltPosition,
+      hash: value,
+      salt: saltValue,
+      display: value + ':' + saltValue
+    };
+  }
+
+  function makeBcryptTarget(hash) {
+    return { key: 'BCRYPT|' + hash, mode: 'BCRYPT', kind: 'bcrypt', hash: hash, display: hash };
+  }
+
+  function parseNetNTLMv2Line(raw) {
+    var value = String(raw || '').trim();
+    var parts = value.split(':');
+    var username, domain, challenge, proof, blob;
+    if (parts.length === 6 && parts[1] === '') {
+      username = parts[0]; domain = parts[2]; challenge = parts[3]; proof = parts[4]; blob = parts[5];
+    } else if (parts.length === 5) {
+      username = parts[0]; domain = parts[1]; challenge = parts[2]; proof = parts[3]; blob = parts[4];
+    } else {
+      return { ok: false, error: 'NetNTLMv2 格式应为 user::domain:challenge:NTProofStr:blob' };
+    }
+    if (!username) return { ok: false, error: 'NetNTLMv2 缺少用户名' };
+    if (!/^[0-9a-f]{16}$/i.test(challenge)) return { ok: false, error: 'NetNTLMv2 的 ServerChallenge 应为 16 位十六进制（8 字节）' };
+    if (!/^[0-9a-f]{32}$/i.test(proof)) return { ok: false, error: 'NetNTLMv2 的 NTProofStr 应为 32 位十六进制（16 字节）' };
+    if (!blob || blob.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(blob)) return { ok: false, error: 'NetNTLMv2 的 Blob 应为偶数长度的十六进制' };
+    challenge = challenge.toLowerCase();
+    proof = proof.toLowerCase();
+    blob = blob.toLowerCase();
+    var display = username + '::' + domain + ':' + challenge + ':' + proof + ':' + blob;
+    return {
+      ok: true,
+      target: {
+        key: 'NETNTLMv2|' + display,
+        mode: 'NETNTLMv2',
+        kind: 'netntlmv2',
+        username: username,
+        domain: domain,
+        challenge: challenge,
+        proof: proof,
+        blob: blob,
+        display: display
+      }
+    };
+  }
+
+  function parseDcc2Line(raw) {
+    var value = String(raw || '').trim();
+    var marker = value.indexOf('$DCC2$');
+    if (marker === -1) return { ok: false, error: 'DCC2 格式应为 $DCC2$10240#user#hash' };
+    value = value.slice(marker);
+    var match = /^\$DCC2\$(\d+)#([^#]+)#([0-9a-f]{32})$/i.exec(value);
+    if (!match) return { ok: false, error: 'DCC2 格式应为 $DCC2$10240#user#hash（32 位十六进制结果）' };
+    var iterations = Number(match[1]);
+    if (!Number.isSafeInteger(iterations) || iterations < 1 || iterations > 1000000) {
+      return { ok: false, error: 'DCC2 迭代次数应在 1–1,000,000 之间（常见为 10240）' };
+    }
+    var username = match[2].trim();
+    if (!username) return { ok: false, error: 'DCC2 缺少用户名' };
+    var hash = match[3].toLowerCase();
+    var display = '$DCC2$' + iterations + '#' + username + '#' + hash;
+    return {
+      ok: true,
+      target: {
+        key: 'DCC2|' + display,
+        mode: 'DCC2',
+        kind: 'dcc2',
+        username: username,
+        iterations: iterations,
+        hash: hash,
+        display: display
+      }
+    };
+  }
+
+  function parseTargetForMode(raw, mode, globalSalt) {
+    var definition = MODES[mode];
+    if (!definition) return { ok: false, error: '不支持的哈希模式' };
+    if (definition.kind === 'bcrypt') {
+      if (!BCRYPT_RE.test(raw)) return { ok: false, error: 'bcrypt 格式不正确（应为 $2a$ / $2b$ / $2y$ + 成本 + 53 位字符）' };
+      return { ok: true, target: makeBcryptTarget(raw) };
+    }
+    if (definition.kind === 'netntlmv2') return parseNetNTLMv2Line(raw);
+    if (definition.kind === 'dcc2') return parseDcc2Line(raw);
+    if (definition.kind === 'salted') {
+      var hashPart = raw;
+      var salt = null;
+      var colon = raw.indexOf(':');
+      if (colon !== -1) {
+        hashPart = raw.slice(0, colon);
+        salt = raw.slice(colon + 1);
+        if (!salt) return { ok: false, error: 'Salt 为空；请写成 hash:salt，或填写全局 Salt' };
+      } else if (globalSalt !== null && globalSalt !== undefined && String(globalSalt).length > 0) {
+        salt = String(globalSalt);
+      } else {
+        return { ok: false, error: '带盐模式需要 hash:salt，或填写全局 Salt' };
+      }
+      if (!isHex(hashPart) || hashPart.length !== definition.hexLength) {
+        return { ok: false, error: '哈希不是 ' + definition.hexLength + ' 位十六进制字符串' };
+      }
+      return { ok: true, target: makeSaltedTarget(mode, hashPart, salt) };
+    }
+    if (raw.indexOf(':') !== -1) return { ok: false, error: '该模式不带 salt；请选择带盐模式，或删除哈希行中的冒号' };
+    if (!isHex(raw) || raw.length !== definition.hexLength) {
+      return { ok: false, error: '不是 ' + definition.hexLength + ' 位十六进制字符串' };
+    }
+    return { ok: true, target: makeUnsaltedTarget(mode, raw) };
+  }
+
+  function detectMode(value) {
+    var raw = String(value || '').trim();
+    if (BCRYPT_RE.test(raw)) return 'BCRYPT';
+    if (raw.indexOf('$DCC2$') !== -1) return parseDcc2Line(raw).ok ? 'DCC2' : null;
+    if (parseNetNTLMv2Line(raw).ok) return 'NETNTLMv2';
+    if (!isHex(raw)) return null;
+    return HEX_LENGTH_MODE[raw.length] || null;
+  }
+
+  function parseHashLines(text, selectedMode, globalSalt) {
     selectedMode = selectedMode || 'AUTO';
     var targets = new Map();
     var invalid = [];
     var counts = {};
     var ambiguous32 = 0;
-    String(text || '').split(/\r?\n/).forEach(function (line, index) {
+    stripBom(text).split(/\r?\n/).forEach(function (line, index) {
       var raw = line.trim();
       if (!raw) return;
-      var mode = selectedMode === 'AUTO' ? detectMode(raw) : selectedMode;
+      var target = null;
       var reason = null;
-      if (!mode) {
-        reason = /^[0-9a-f]{96}$/i.test(raw) ? '暂不支持 SHA-384' : '无法自动识别；支持 32/40/64/128 位十六进制或 bcrypt';
-      } else if (mode === 'BCRYPT') {
-        if (!BCRYPT_RE.test(raw)) reason = 'bcrypt 格式不正确（应为 $2a$ / $2b$ / $2y$ + 成本 + 53 位字符）';
+      if (selectedMode === 'AUTO') {
+        if (BCRYPT_RE.test(raw)) {
+          target = makeBcryptTarget(raw);
+        } else if (raw.indexOf('$DCC2$') !== -1) {
+          var dcc2 = parseDcc2Line(raw);
+          if (dcc2.ok) target = dcc2.target; else reason = dcc2.error;
+        } else {
+          var netntlm = parseNetNTLMv2Line(raw);
+          if (netntlm.ok) {
+            target = netntlm.target;
+          } else {
+            var detected = detectMode(raw);
+            if (detected) {
+              var autoParsed = parseTargetForMode(raw, detected, globalSalt);
+              if (autoParsed.ok) target = autoParsed.target; else reason = autoParsed.error;
+            } else if (raw.indexOf('::') !== -1) {
+              reason = 'NetNTLMv2 格式不正确：user::domain:challenge:NTProofStr:blob';
+            } else if (raw.indexOf(':') !== -1) {
+              reason = '检测到冒号；带 salt 的哈希请先选择对应的“带盐”模式，或使用“全局 Salt”';
+            } else if (/^[0-9a-f]{96}$/i.test(raw)) {
+              reason = '暂不支持 SHA-384';
+            } else {
+              reason = '无法自动识别；支持无盐 MD5/SHA/NTLM、bcrypt、NetNTLMv2 和 $DCC2$';
+            }
+          }
+        }
       } else {
-        var expected = MODES[mode] && MODES[mode].hexLength;
-        if (!expected || !isHex(raw) || raw.length !== expected) reason = '不是 ' + (expected || '?') + ' 位十六进制字符串';
+        var parsed = parseTargetForMode(raw, selectedMode, globalSalt);
+        if (parsed.ok) target = parsed.target; else reason = parsed.error;
       }
-      if (reason) { invalid.push({ line: index + 1, value: raw, reason: reason }); return; }
-      var hash = mode === 'BCRYPT' ? raw : raw.toLowerCase();
-      if (selectedMode === 'AUTO' && raw.length === 32 && isHex(raw)) ambiguous32++;
-      if (!targets.has(hash)) {
-        targets.set(hash, mode);
-        counts[mode] = (counts[mode] || 0) + 1;
+      if (reason || !target) {
+        invalid.push({ line: index + 1, value: raw, reason: reason || '无法解析该哈希' });
+        return;
+      }
+      if (selectedMode === 'AUTO' && target.mode === 'MD5' && target.hash && target.hash.length === 32) ambiguous32++;
+      if (!targets.has(target.key)) {
+        targets.set(target.key, target);
+        counts[target.mode] = (counts[target.mode] || 0) + 1;
       }
     });
     return { targets: targets, invalid: invalid, counts: counts, ambiguous32: ambiguous32 };
@@ -864,6 +1073,16 @@
       csOptions += ' -' + (index + 1) + ' ' + shellQuote(String(custom[index] || ''));
     });
     var constraints = input.constraints;
+    var definitions = modes.map(function (mode) { return MODES[mode]; }).filter(Boolean);
+    if (definitions.some(function (definition) { return definition.kind === 'salted'; })) {
+      lines.push('# 带盐模式：hash.txt 每行使用 hash:salt；若本页使用了全局 Salt，请先把它写入每一行。');
+    }
+    if (definitions.some(function (definition) { return definition.key === 'NETNTLMv2'; })) {
+      lines.push('# NetNTLMv2 行格式：user::domain:challenge:NTProofStr:blob；HashCat 直接读取整行。');
+    }
+    if (definitions.some(function (definition) { return definition.key === 'DCC2'; })) {
+      lines.push('# DCC2 行格式：$DCC2$10240#user#hash；浏览器 PBKDF2 验证通常比 MD5/SHA 慢很多。');
+    }
     if (constraints && hasConstraints(constraints)) {
       lines.push('# 本页“密码特征约束”没有等价的 hashcat 参数，hashcat 可能会多尝试一些候选。');
     }
@@ -906,6 +1125,10 @@
     md4: md4,
     ntlm: ntlm,
     hexOf: hexOf,
+    hexToBytes: hexToBytes,
+    utf16leBytes: utf16leBytes,
+    concatBytes: concatBytes,
+    hmacMd5: hmacMd5,
     expandCustomSet: expandCustomSet,
     maskFromBlocks: maskFromBlocks,
     compileMask: compileMask,
@@ -922,6 +1145,8 @@
     variantEstimate: variantEstimate,
     rulesActive: rulesActive,
     detectMode: detectMode,
+    parseNetNTLMv2Line: parseNetNTLMv2Line,
+    parseDcc2Line: parseDcc2Line,
     parseHashLines: parseHashLines,
     shellQuote: shellQuote,
     hashcatCommand: hashcatCommand

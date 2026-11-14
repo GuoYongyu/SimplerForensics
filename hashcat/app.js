@@ -44,62 +44,158 @@
 
   function hashcatWorkerMain() {
     'use strict';
-    var targetSets = new Map();
+    var unsalted = new Map();
+    var saltedGroups = [];
     var bcryptTargets = [];
+    var netntlmTargets = [];
+    var dcc2Targets = [];
     var modes = [];
     var encoder = new TextEncoder();
 
-    function digestToHex(buffer) {
-      var bytes = new Uint8Array(buffer);
+    function bytesToHex(buffer) {
+      var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
       var out = '';
       for (var i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, '0');
       return out;
     }
 
+    function shaAlgorithm(algorithm) {
+      return algorithm === 'SHA1' ? 'SHA-1' : algorithm === 'SHA256' ? 'SHA-256' : 'SHA-512';
+    }
+
     self.onmessage = async function (event) {
       var message = event.data;
       try {
-      if (message.type === 'init') {
-        targetSets = new Map();
-        (message.targets || []).forEach(function (target) {
-          if (!targetSets.has(target.mode)) targetSets.set(target.mode, new Set());
-          targetSets.get(target.mode).add(target.hash);
-        });
-        bcryptTargets = (message.bcryptTargets || []).slice();
-        modes = Array.from(targetSets.keys());
-        return;
-      }
-      if (message.type !== 'batch') return;
-      var candidates = message.candidates || [];
-      var matches = [];
-      for (var index = 0; index < candidates.length; index++) {
-        var candidate = candidates[index];
-        var bytes = null;
-        for (var mi = 0; mi < modes.length; mi++) {
-          var mode = modes[mi];
-          var hash;
-          if (mode === 'MD5') {
-            hash = md5(encoder.encode(candidate));
-          } else if (mode === 'NTLM') {
-            hash = ntlm(candidate);
-          } else {
-            if (!bytes) bytes = encoder.encode(candidate);
-            var algorithm = mode === 'SHA1' ? 'SHA-1' : mode === 'SHA256' ? 'SHA-256' : 'SHA-512';
-            var digest = await crypto.subtle.digest(algorithm, bytes);
-            hash = digestToHex(digest);
+        if (message.type === 'init') {
+          unsalted = new Map();
+          saltedGroups = [];
+          bcryptTargets = [];
+          netntlmTargets = [];
+          dcc2Targets = [];
+          modes = [];
+          (message.targets || []).forEach(function (target) {
+            if (!target || !target.key) return;
+            if (target.kind === 'bcrypt') {
+              bcryptTargets.push({ key: target.key, hash: target.hash });
+              return;
+            }
+            if (target.kind === 'netntlmv2') {
+              netntlmTargets.push({
+                key: target.key,
+                proof: target.proof,
+                challengeBytes: hexToBytes(target.challenge),
+                blobBytes: hexToBytes(target.blob),
+                userDomainBytes: utf16leBytes(target.username.toUpperCase() + target.domain)
+              });
+              return;
+            }
+            if (target.kind === 'dcc2') {
+              dcc2Targets.push({
+                key: target.key,
+                hash: target.hash,
+                iterations: target.iterations,
+                saltBytes: utf16leBytes(target.username.toLowerCase())
+              });
+              return;
+            }
+            if (target.kind === 'salted') {
+              var groupKey = target.mode + '|' + target.saltPosition + '|' + target.salt;
+              var group = saltedGroups.find(function (item) { return item.groupKey === groupKey; });
+              if (!group) {
+                group = {
+                  groupKey: groupKey,
+                  mode: target.mode,
+                  algorithm: target.algorithm,
+                  salt: target.salt,
+                  saltPosition: target.saltPosition,
+                  hashes: new Map()
+                };
+                saltedGroups.push(group);
+              }
+              group.hashes.set(target.hash, target.key);
+              return;
+            }
+            if (!unsalted.has(target.mode)) unsalted.set(target.mode, new Map());
+            unsalted.get(target.mode).set(target.hash, target.key);
+          });
+          modes = Array.from(unsalted.keys());
+          return;
+        }
+        if (message.type !== 'batch') return;
+        var candidates = message.candidates || [];
+        var matches = [];
+        for (var index = 0; index < candidates.length; index++) {
+          var candidate = candidates[index];
+          var bytes = null;
+          var ntHashBytes = null;
+
+          for (var mi = 0; mi < modes.length; mi++) {
+            var mode = modes[mi];
+            var hash;
+            if (mode === 'MD5') {
+              hash = md5(encoder.encode(candidate));
+            } else if (mode === 'NTLM') {
+              hash = ntlm(candidate);
+            } else {
+              if (!bytes) bytes = encoder.encode(candidate);
+              var digest = await crypto.subtle.digest(shaAlgorithm(mode), bytes);
+              hash = bytesToHex(digest);
+            }
+            var unsaltedKey = unsalted.get(mode).get(hash);
+            if (unsaltedKey) matches.push({ key: unsaltedKey, mode: mode, candidate: candidate });
           }
-          if (targetSets.get(mode).has(hash)) matches.push({ mode: mode, target: hash, candidate: candidate });
+
+          for (var si = 0; si < saltedGroups.length; si++) {
+            var salted = saltedGroups[si];
+            var saltedText = salted.saltPosition === 'before' ? salted.salt + candidate : candidate + salted.salt;
+            var saltedBytes = encoder.encode(saltedText);
+            var saltedHash = salted.algorithm === 'MD5'
+              ? md5(saltedBytes)
+              : bytesToHex(await crypto.subtle.digest(shaAlgorithm(salted.algorithm), saltedBytes));
+            var saltedKey = salted.hashes.get(saltedHash);
+            if (saltedKey) matches.push({ key: saltedKey, mode: salted.mode, candidate: candidate });
+          }
+
+          for (var bi = 0; bi < bcryptTargets.length; bi++) {
+            var bcryptTarget = bcryptTargets[bi];
+            try {
+              var marker = String.fromCharCode(36);
+              var normalized = bcryptTarget.hash.slice(0, 4) === marker + '2y' + marker
+                ? marker + '2b' + marker + bcryptTarget.hash.slice(4)
+                : bcryptTarget.hash;
+              if (dcodeIO.bcrypt.compareSync(candidate, normalized)) {
+                matches.push({ key: bcryptTarget.key, mode: 'BCRYPT', candidate: candidate });
+              }
+            } catch (_) { /* malformed target or candidate */ }
+          }
+
+          if (netntlmTargets.length || dcc2Targets.length) {
+            ntHashBytes = hexToBytes(md4(utf16leBytes(candidate)));
+          }
+          for (var ni = 0; ni < netntlmTargets.length; ni++) {
+            var netntlm = netntlmTargets[ni];
+            var ntlmv2Key = hmacMd5(ntHashBytes, netntlm.userDomainBytes);
+            var proof = bytesToHex(hmacMd5(ntlmv2Key, concatBytes(netntlm.challengeBytes, netntlm.blobBytes)));
+            if (proof === netntlm.proof) {
+              matches.push({ key: netntlm.key, mode: 'NETNTLMv2', candidate: candidate });
+            }
+          }
+          for (var di = 0; di < dcc2Targets.length; di++) {
+            var dcc2 = dcc2Targets[di];
+            var dcc2Secret = hexToBytes(md4(concatBytes(ntHashBytes, dcc2.saltBytes)));
+            var imported = await crypto.subtle.importKey('raw', dcc2Secret, 'PBKDF2', false, ['deriveBits']);
+            var bits = await crypto.subtle.deriveBits({
+              name: 'PBKDF2',
+              hash: 'SHA-1',
+              salt: dcc2.saltBytes,
+              iterations: dcc2.iterations
+            }, imported, 128);
+            if (bytesToHex(new Uint8Array(bits)) === dcc2.hash) {
+              matches.push({ key: dcc2.key, mode: 'DCC2', candidate: candidate });
+            }
+          }
         }
-        for (var bi = 0; bi < bcryptTargets.length; bi++) {
-          var target = bcryptTargets[bi];
-          try {
-            var marker = String.fromCharCode(36);
-            var normalized = target.slice(0, 4) === marker + '2y' + marker ? marker + '2b' + marker + target.slice(4) : target;
-            if (dcodeIO.bcrypt.compareSync(candidate, normalized)) matches.push({ mode: 'BCRYPT', target: target, candidate: candidate });
-          } catch (_) { /* malformed target or candidate */ }
-        }
-      }
-      self.postMessage({ type: 'done', seq: message.seq, processed: candidates.length, matches: matches });
+        self.postMessage({ type: 'done', seq: message.seq, processed: candidates.length, matches: matches });
       } catch (error) {
         self.postMessage({ type: 'error', seq: message && message.seq, message: String((error && error.message) || error) });
       }
@@ -114,6 +210,10 @@
       'const md5 = ' + core.md5.toString() + ';',
       'const md4 = ' + core.md4.toString() + ';',
       'const ntlm = ' + core.ntlm.toString() + ';',
+      'const hexToBytes = ' + core.hexToBytes.toString() + ';',
+      'const utf16leBytes = ' + core.utf16leBytes.toString() + ';',
+      'const concatBytes = ' + core.concatBytes.toString() + ';',
+      'const hmacMd5 = ' + core.hmacMd5.toString() + ';',
       '(' + hashcatWorkerMain.toString() + ')();'
     ].join('\n');
     workerUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
@@ -136,8 +236,7 @@
       this.error = null;
       this.waiters = [];
 
-      const hexTargets = targets.filter((target) => target.mode !== 'BCRYPT').map((target) => ({ hash: target.hash, mode: target.mode }));
-      const bcryptTargets = targets.filter((target) => target.mode === 'BCRYPT').map((target) => target.hash);
+      const initialTargets = targets.map((target) => Object.assign({}, target));
       const url = getWorkerUrl();
       try {
         for (let i = 0; i < threadCount; i++) {
@@ -147,7 +246,7 @@
           worker.onmessageerror = () => this.fail('哈希 Worker 消息无法解析。');
           this.workers.push(worker);
           this.busy.push(false);
-          worker.postMessage({ type: 'init', targets: hexTargets, bcryptTargets: bcryptTargets });
+          worker.postMessage({ type: 'init', targets: initialTargets });
         }
       } catch (error) {
         this.close();
@@ -295,14 +394,40 @@
     updateRuleEstimate();
   }
 
+  function detectTextEncoding(bytes, done) {
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) return { encoding: 'utf-16le', offset: 2 };
+    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) return { encoding: 'utf-16be', offset: 2 };
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) return { encoding: 'utf-8', offset: 3 };
+    if (bytes.length >= 4 && bytes[1] === 0 && bytes[3] === 0) return { encoding: 'utf-16le', offset: 0 };
+    if (bytes.length >= 4 && bytes[0] === 0 && bytes[2] === 0) return { encoding: 'utf-16be', offset: 0 };
+    if (done || bytes.length >= 4) return { encoding: 'utf-8', offset: 0 };
+    return null;
+  }
+
+  function decodeTextBuffer(buffer) {
+    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    const detected = detectTextEncoding(bytes, true) || { encoding: 'utf-8', offset: 0 };
+    return new TextDecoder(detected.encoding).decode(bytes.subarray(detected.offset));
+  }
+
   async function* linesOf(file) {
     if (file.stream) {
       const reader = file.stream().getReader();
-      const decoder = new TextDecoder('utf-8');
+      let decoder = null;
+      let header = new Uint8Array(0);
       let pending = '';
       while (true) {
         const result = await reader.read();
-        pending += decoder.decode(result.value || new Uint8Array(), { stream: !result.done });
+        let chunk = result.value ? new Uint8Array(result.value) : new Uint8Array(0);
+        if (!decoder) {
+          header = C.concatBytes(header, chunk);
+          const detected = detectTextEncoding(header, result.done);
+          if (!detected) continue;
+          decoder = new TextDecoder(detected.encoding);
+          chunk = header.subarray(detected.offset);
+          header = new Uint8Array(0);
+        }
+        pending += decoder.decode(chunk, { stream: !result.done });
         const parts = pending.split(/\r?\n/);
         pending = parts.pop();
         for (const line of parts) yield line;
@@ -310,7 +435,7 @@
       }
       if (pending) yield pending;
     } else {
-      const text = await file.text();
+      const text = decodeTextBuffer(await file.arrayBuffer());
       for (const line of text.split(/\r?\n/)) yield line;
     }
   }
@@ -576,9 +701,31 @@
    * Rendering: summary, rules and command
    * ------------------------------------------------------------------ */
 
+  function updateSaltUi() {
+    const mode = $('#hash-mode').value;
+    const definition = C.MODES[mode];
+    const salted = !!(definition && definition.kind === 'salted');
+    $('#salt-row').hidden = !salted;
+    let hint;
+    if (!definition) {
+      hint = '自动检测：无盐的 32/40/64/128 位十六进制、bcrypt、NetNTLMv2 和 $DCC2$ 会自动识别。带盐的固定 Salt 模式需要手动选择，并写 hash:salt 或填写全局 Salt。';
+    } else if (definition.kind === 'salted') {
+      hint = definition.label + '：每行写 hash:salt，或使用全局 Salt；Salt 位置由该模式决定（-m ' + definition.hashcat + '）。';
+    } else if (definition.kind === 'netntlmv2') {
+      hint = 'NetNTLMv2 行格式：user::domain:serverChallenge:NTProofStr:blob；也会自动识别这种格式。';
+    } else if (definition.kind === 'dcc2') {
+      hint = 'DCC2 行格式：$DCC2$10240#user#hash；Windows Vista+ 的域缓存凭据。浏览器 PBKDF2 验证较慢。';
+    } else if (definition.kind === 'bcrypt') {
+      hint = 'bcrypt：使用 $2a$ / $2b$ / $2y$ 格式；bcrypt 成本越高越慢。';
+    } else {
+      hint = definition.label + '：无盐模式，每行只写哈希。Windows 的 NTLM 也是无盐哈希；32 位十六进制在自动模式下默认按 MD5 处理。';
+    }
+    $('#hash-format-hint').textContent = hint;
+  }
+
   function updateHashSummary() {
     const selected = $('#hash-mode').value;
-    const parsed = C.parseHashLines($('#hashes').value, selected);
+    const parsed = C.parseHashLines($('#hashes').value, selected, $('#global-salt').value);
     const summary = $('#hash-summary');
     if (!parsed.targets.size && !parsed.invalid.length) {
       summary.className = 'status';
@@ -586,7 +733,7 @@
       updateCommand();
       return;
     }
-    const parts = Object.entries(parsed.counts).map(([mode, count]) => C.MODES[mode].label + ' × ' + count);
+    const parts = Object.entries(parsed.counts).map(([mode, count]) => ((C.MODES[mode] || {}).label || mode) + ' × ' + count);
     let message = '识别到 ' + parsed.targets.size + ' 个哈希' + (parts.length ? '：' + parts.join('、') : '') + '。';
     if (parsed.ambiguous32) message += ' 32 位十六进制在自动模式下按 MD5 处理；如需 NTLM，请手动选择 NTLM。';
     if (parsed.invalid.length) {
@@ -645,8 +792,8 @@
   }
 
   function updateCommand() {
-    const parsed = C.parseHashLines($('#hashes').value, $('#hash-mode').value);
-    const modes = Array.from(new Set(parsed.targets.values()));
+    const parsed = C.parseHashLines($('#hashes').value, $('#hash-mode').value, $('#global-salt').value);
+    const modes = Array.from(new Set(Array.from(parsed.targets.values()).map((target) => target.mode)));
     const compiled = currentCompiledMask();
     const command = C.hashcatCommand({
       attack: state.attack,
@@ -702,14 +849,14 @@
       box.appendChild(empty);
       return;
     }
-    for (const [hash, result] of runState.results) {
+    for (const result of runState.results.values()) {
       const card = document.createElement('article');
       card.className = 'hc-result' + (result.found ? ' is-found' : '') + (runState.finished && !result.found ? ' is-missing' : '');
       const head = document.createElement('div');
       head.className = 'hc-result-head';
       const code = document.createElement('code');
       code.className = 'hc-result-hash';
-      code.textContent = hash;
+      code.textContent = result.target ? result.target.display : result.key;
       const mode = document.createElement('span');
       mode.className = 'chip';
       mode.textContent = (C.MODES[result.mode] || {}).label || result.mode;
@@ -786,8 +933,8 @@
   function collectResultText(runState) {
     if (!runState) return '';
     const lines = ['HashCat 破解工作台结果', '时间：' + new Date().toLocaleString(), ''];
-    for (const [hash, result] of runState.results) {
-      lines.push('哈希（' + ((C.MODES[result.mode] || {}).label || result.mode) + '）：' + hash);
+    for (const result of runState.results.values()) {
+      lines.push('哈希（' + ((C.MODES[result.mode] || {}).label || result.mode) + '）：' + (result.target ? result.target.display : result.key));
       lines.push('状态：' + (result.found ? '已命中' : '未找到'));
       if (result.found) lines.push('明文：' + result.plaintext);
       lines.push('');
@@ -826,7 +973,7 @@
   }
 
   function handleMatch(runState, match) {
-    const result = runState.results.get(match.target);
+    const result = runState.results.get(match.key);
     if (!result || result.found) return;
     result.found = true;
     result.plaintext = match.candidate;
@@ -857,9 +1004,14 @@
 
   function batchSizeFor(targets) {
     const modes = new Set(targets.map((target) => target.mode));
+    if (modes.has('DCC2')) return 4;
     if (modes.has('BCRYPT')) return 24;
-    if (modes.has('SHA1') || modes.has('SHA256') || modes.has('SHA512')) return 400;
-    return 1600;
+    if (modes.has('NETNTLMv2')) return 120;
+    const usesSha = targets.some((target) => {
+      const definition = C.MODES[target.mode];
+      return definition && (definition.algorithm === 'SHA1' || definition.algorithm === 'SHA256' || definition.algorithm === 'SHA512');
+    });
+    return usesSha ? 400 : 1600;
   }
 
   function breathe() {
@@ -914,7 +1066,7 @@
       for await (const raw of linesOf(file)) {
         lineNo++;
         if (stopped(runState)) break;
-        const variants = C.variantsForWord(raw.replace(/\r$/, ''), runState.rules);
+        const variants = C.variantsForWord(raw.replace(/^\uFEFF/, '').replace(/\r$/, ''), runState.rules);
         for (const variant of variants) {
           if (hybrid) {
             const keyspace = Number(runState.mask.keyspace);
@@ -981,12 +1133,13 @@
 
   async function startCrack() {
     if (run) return;
-    const parsed = C.parseHashLines($('#hashes').value, $('#hash-mode').value);
+    const parsed = C.parseHashLines($('#hashes').value, $('#hash-mode').value, $('#global-salt').value);
     if (!parsed.targets.size) {
       fail(parsed.invalid.length ? '没有有效哈希。无效输入：' + parsed.invalid.map((item) => '第 ' + item.line + ' 行（' + item.reason + '）').join('；') : '请先输入至少一个哈希值。');
       return;
     }
-    if (Array.from(parsed.targets.values()).includes('BCRYPT') && !window.bcryptWorkerSource) {
+    const parsedTargets = Array.from(parsed.targets.values());
+    if (parsedTargets.some((target) => target.mode === 'BCRYPT') && !window.bcryptWorkerSource) {
       fail('bcrypt 验证组件未加载（ciphertext/bcrypt-source.js）。请确认文件存在后刷新页面。');
       return;
     }
@@ -1055,14 +1208,18 @@
       const ok = window.confirm('本次预计需要验证 ' + C.formatCount(estimated) + ' 个候选。浏览器版速度远低于 GPU HashCat，可能耗时较久。仍要继续吗？');
       if (!ok) return;
     }
-    if (parsed.targets.size && Array.from(parsed.targets.values()).some((mode) => mode === 'BCRYPT') && estimated !== null && estimated > 20000) {
+    if (parsedTargets.some((target) => target.mode === 'BCRYPT') && estimated !== null && estimated > 20000) {
       const ok = window.confirm('目标包含 bcrypt。浏览器中的 bcrypt 验证非常慢，' + C.formatCount(estimated) + ' 个候选可能需要很久。仍要继续吗？');
       if (!ok) return;
     }
+    if (parsedTargets.some((target) => target.mode === 'DCC2') && estimated !== null && estimated > 5000) {
+      const ok = window.confirm('目标包含 Windows DCC2（MS-Cache v2），每个候选都要执行 PBKDF2-HMAC-SHA1。' + C.formatCount(estimated) + ' 个候选可能需要很久。仍要继续吗？');
+      if (!ok) return;
+    }
 
-    const targets = Array.from(parsed.targets, ([hash, mode]) => ({ hash, mode }));
+    const targets = parsedTargets;
     const results = new Map();
-    targets.forEach((target) => results.set(target.hash, { mode: target.mode, found: false, plaintext: null }));
+    targets.forEach((target) => results.set(target.key, { target: target, mode: target.mode, found: false, plaintext: null }));
     const threads = C.clampInt($('#threads').value, 1, 8, 4);
     const runState = {
       stop: false,
@@ -1154,6 +1311,7 @@
     $('input[name="mask-source"][value="builder"]').checked = true;
     state.blocks = [{ type: 'literal', text: 'hashcat' }];
     state.customSets = ['', '', '', ''];
+    $('#global-salt').value = '';
     $('#mask-builder').hidden = false;
     $('#mask-raw-wrap').hidden = true;
     clearConstraints();
@@ -1172,6 +1330,7 @@
     $('#hash-mode').dispatchEvent(new Event('change', { bubbles: true }));
     $('#regex-pattern').value = '[a-z]{3}\\d{2}';
     $('#regex-max-length').value = '8';
+    $('#global-salt').value = '';
     clearConstraints();
     setAttack('regex');
     updateHashSummary();
@@ -1206,7 +1365,14 @@
       clearTimeout(hashTimer);
       hashTimer = setTimeout(updateHashSummary, 180);
     });
-    $('#hash-mode').addEventListener('change', updateHashSummary);
+    $('#hash-mode').addEventListener('change', () => {
+      updateSaltUi();
+      updateHashSummary();
+    });
+    $('#global-salt').addEventListener('input', () => {
+      updateHashSummary();
+      updateCommand();
+    });
 
     $$('input[name="attack"]').forEach((input) => input.addEventListener('change', () => setAttack(input.value)));
     $$('input[name="mask-source"]').forEach((input) => input.addEventListener('change', () => {
@@ -1439,6 +1605,7 @@
 
   function init() {
     bindEvents();
+    updateSaltUi();
     renderBlocks();
     $('#raw-mask').value = state.rawMask;
     $('#regex-pattern').value = state.regex.pattern;

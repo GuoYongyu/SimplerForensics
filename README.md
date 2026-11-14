@@ -43,9 +43,9 @@
 
 ### HashCat 破解工作台
 
-页面位于 `hashcat/`，提供掩码、字典 + 规则、混合和正则约束四种候选生成方式，在浏览器 Web Worker 中验证 MD5、SHA-1、SHA-256、SHA-512、NTLM 和 bcrypt 哈希。掩码构建器支持 `?l`、`?u`、`?d`、`?s`、`?a` 和自定义 `?1`–`?4` 字符集；字典规则支持大小写、反转、重复、1337 替换、前后缀、追加字符和年份；正则模式支持常用子集，并可用长度、字符类型、必须包含/排除等条件过滤候选。页面内置可展开的 HashCat 指令教程和当前设置对应的命令；教程覆盖哈希模式、攻击模式、掩码、规则、常用参数、会话恢复、性能与排错。
+页面位于 `hashcat/`，提供掩码、字典 + 规则、混合和正则约束四种候选生成方式，在浏览器 Web Worker 中验证无盐 MD5、SHA-1、SHA-256、SHA-512、NTLM、bcrypt，带固定 Salt 的 MD5/SHA 模式，以及 Windows 的 NetNTLMv2 与 DCC2（MS-Cache v2）。掩码构建器支持 `?l`、`?u`、`?d`、`?s`、`?a` 和自定义 `?1`–`?4` 字符集；字典规则支持大小写、反转、重复、1337 替换、前后缀、追加字符和年份；正则模式支持常用子集，并可用长度、字符类型、必须包含/排除等条件过滤候选。页面内置可展开的 HashCat 指令教程和当前设置对应的命令；教程覆盖哈希模式、攻击模式、掩码、规则、带盐与 Windows 格式、常用参数、会话恢复、性能与排错。
 
-候选生成在主线程分块进行，哈希验证在 Web Worker 中完成；页面只处理无 salt 的常见格式，不调用 GPU，不执行 HashCat 命令，也不上传哈希或字典。掩码和正则的候选空间上限为 5 亿；混合与字典模式边读边跑，可随时停止。带 salt、WPA、Kerberos、NetNTLM 等模式、完整规则语法和 GPU 加速请使用本机 HashCat。bcrypt 验证复用 `ciphertext/bcrypt-source.js`。
+候选生成在主线程分块进行，哈希验证在 Web Worker 中完成；页面支持无盐、固定 Salt（`hash:salt` 或全局 Salt）以及 Windows NetNTLMv2/DCC2，自动处理 UTF-8 BOM、CRLF，并识别带 BOM 的 UTF-16LE/BE 字典。不调用 GPU，不执行 HashCat 命令，也不上传哈希或字典。掩码和正则的候选空间上限为 5 亿；混合与字典模式边读边跑，可随时停止。NetNTLMv1、MS-Cache v1（DCC1）、WPA、Kerberos 等其他格式、完整规则语法和 GPU 加速请使用本机 HashCat；DCC2 的 PBKDF2 验证在浏览器中通常很慢，建议先用小字典。Windows 下可直接用 `launch.bat` 启动；页面会自动处理 BOM/CRLF/UTF-16 字典，PowerShell 命令示例见教程。bcrypt 验证复用 `ciphertext/bcrypt-source.js`。
 
 ### 文件与图片分析
 
